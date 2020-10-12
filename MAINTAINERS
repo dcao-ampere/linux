@@ -934,6 +934,13 @@ S:	Supported
 F:	arch/arm64/boot/dts/amd/amd-seattle-xgbe*.dtsi
 F:	drivers/net/ethernet/amd/xgbe/
 
+AMPERE COMPUTING SMpro DRIVER
+M:	Thu Ba Nguyen <thu@os.amperecomputing.com>
+S:	Supported
+F:	Documentation/devicetree/bindings/i2c/ampere,ac01-smpro.yaml
+F:	arch/arm/boot/dts/aspeed-bmc-ampere-mtjade.dts
+F:	drivers/hwmon/smpro-hwmon.c
+
 ANALOG DEVICES INC AD5686 DRIVER
 M:	Michael Hennerich <Michael.Hennerich@analog.com>
 L:	linux-pm@vger.kernel.org
