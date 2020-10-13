@@ -89,6 +89,8 @@ patternProperties:
     description: Anvo-Systems Dresden GmbH
   "^apm,.*":
     description: Applied Micro Circuits Corporation (APM)
+  "^ampere,.*":
+    description: Ampere Computing LLC
   "^aptina,.*":
     description: Aptina Imaging
   "^arasan,.*":
