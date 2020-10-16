@@ -1,0 +1,18 @@
+* Aspeed SSIF IPMI interface
+
+The Aspeed SOC (AST2500) is commonly used as BMCs
+(BaseBoard Management Controllers) and the IPMI SSIF interface can be used
+to perform in-band IPMI communication with their host.
+
+Required properties:
+
+- compatible : should be
+	"aspeed,ast2500-ssif-bmc"
+- reg: I2C address the registers
+
+Example:
+
+	ssif-bmc@10 {
+		compatible = "aspeed,ast2500-ssif-bmc";
+		reg = <0x10>;
+	};
