@@ -176,6 +176,71 @@
 #define GPI_ACPI_CPPC_CLUSTER_DATA_REG  0xE4
 #define GPI_ACPI_POWER_LIMIT_REG        0xE5
 
+/* I2C read block data constant */
+#define MAX_READ_BLOCK_LENGTH           48
+#define NUM_I2C_MESSAGES                2
+#define MAX_READ_ERROR                  35
+#define MAX_MSG_LEN			128
+
+enum RAS_48BYTES_ERR_TYPES {
+	CORE_CE_ERRS,
+	CORE_UE_ERRS,
+	MEM_CE_ERRS,
+	MEM_UE_ERRS,
+	PCIE_CE_ERRS,
+	PCIE_UE_ERRS,
+	OTHER_CE_ERRS,
+	OTHER_UE_ERRS,
+	NUM_48BYTES_ERR_TYPE,
+};
+
+/*
+ * The outputs from Ras Core/Memory/PCIe/Others UE/CE APIs follow below format:
+ * <Error Type>  <Error SubType>  <Instance>  <Error Status> \
+ * <Error Address>  <Error Misc 0> <Error Misc 1> <Error Misc2> <Error Misc 3>
+ * Where:
+ *  + Error Type: The hardwares cause the errors. (1 byte)
+ *  + SubType: Sub type of error in the specified hardware error. (1 byte)
+ *  + Instance: Combination of the socket, channel,
+ *    slot cause the error. (2 bytes)
+ *  + Error Status: Encode of error status. (4 bytes)
+ *  + Error Address: The address in device causes the errors. (8 bytes)
+ *  + Error Misc 0/1/2/3: Addition info about the errors. (8 bytes for each)
+ * Reference Altra SOC BMC Interface spec.
+ */
+u_int8_t sizeFields[9] = {1, 1, 2, 4, 8, 8, 8, 8, 8};
+
+struct ras_48bytes_info {
+	/* Number of the RAS errors register */
+	u8 countAddr;
+	/* Number of data bytes register */
+	u8 lenAddr;
+	/* Data SCP register */
+	u8 dataAddr;
+};
+/*
+ * Included Address of registers to get Count, Length of data and Data
+ * of the 48 bytes data RAS errors
+ */
+struct ras_48bytes_info list_ras_48bytes_info[NUM_48BYTES_ERR_TYPE] = {
+	{GPI_CORE_CE_ERR_CNT_REG, GPI_CORE_CE_ERR_LEN_REG,
+		GPI_CORE_CE_ERR_DATA_REG},
+	{GPI_CORE_UE_ERR_CNT_REG, GPI_CORE_UE_ERR_LEN_REG,
+		GPI_CORE_UE_ERR_DATA_REG},
+	{GPI_MEM_CE_ERR_CNT_REG, GPI_MEM_CE_ERR_LEN_REG,
+		GPI_MEM_CE_ERR_DATA_REG},
+	{GPI_MEM_UE_ERR_CNT_REG, GPI_MEM_UE_ERR_LEN_REG,
+		GPI_MEM_UE_ERR_DATA_REG},
+	{GPI_PCIe_CE_ERR_CNT_REG, GPI_PCIe_CE_ERR_LEN_REG,
+		GPI_PCIe_CE_ERR_DATA_REG},
+	{GPI_PCIe_UE_ERR_CNT_REG, GPI_PCIe_UE_ERR_LEN_REG,
+		GPI_PCIe_UE_ERR_DATA_REG},
+	{GPI_OTHER_CE_ERR_CNT_REG, GPI_OTHER_CE_ERR_LEN_REG,
+		GPI_OTHER_CE_ERR_DATA_REG},
+	{GPI_OTHER_UE_ERR_CNT_REG, GPI_OTHER_UE_ERR_LEN_REG,
+		GPI_OTHER_UE_ERR_DATA_REG},
+};
+
 struct smpro_data {
 	struct i2c_client *client;
 
@@ -261,6 +326,127 @@ static const char * const label[] = {
 	"DIMM G0",
 	"DIMM G1",
 };
+
+static int read_i2c_block_data(struct i2c_client *client,
+				u16 address, u16 length, u8 *data)
+{
+	struct i2c_msg msgs[2];
+	unsigned char msgbuf0[2];
+	unsigned char msgbuf1[MAX_READ_BLOCK_LENGTH + 2];
+	ssize_t ret;
+	u8 i = 0;
+
+	if (length > MAX_READ_BLOCK_LENGTH)
+		return -EINVAL;
+
+	msgbuf0[0] = (address & 0xff);
+	msgbuf0[1] = length;
+
+	msgs[0].addr = client->addr;
+	msgs[0].flags = client->flags & I2C_M_TEN;
+	msgs[0].len = 2;
+	msgs[0].buf = msgbuf0;
+
+	msgs[1].addr = client->addr;
+	msgs[1].flags = (client->flags  & I2C_M_TEN) | I2C_M_RD;
+	msgs[1].len = length;
+	msgs[1].buf = msgbuf1;
+
+	ret = i2c_transfer(client->adapter, msgs, NUM_I2C_MESSAGES);
+	if (ret < 0)
+		return ret;
+
+	if (ret != NUM_I2C_MESSAGES)
+		return -EIO;
+
+	for (i = 0; i < length; i++)
+		data[i] = msgbuf1[i];
+
+	return length;
+}
+
+static int format_error_output(unsigned char datas[], size_t data_len,
+	char *buf, size_t buf_len)
+{
+	unsigned char str[3] = {'\0'};
+	u8 x = 0, y = 0, curPos = 0;
+
+	if (data_len < MAX_READ_BLOCK_LENGTH + 2)
+		return 0;
+	if (buf_len < MAX_MSG_LEN)
+		return 0;
+
+	for (x = 0; x < sizeof(sizeFields); x++) {
+		for (y = 0; y < sizeFields[x]; y++) {
+			snprintf(str, 3, "%02x",
+				datas[curPos + sizeFields[x] - y - 1]);
+			strncat(buf, str, strlen(str));
+		}
+		strncat(buf, " ", strlen(" "));
+		curPos = curPos + sizeFields[x];
+	}
+	return 1;
+}
+
+static int smpro_ras_48bytes_read(struct device *dev,
+				struct device_attribute *da, char *buf)
+{
+	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+	struct smpro_data *data = dev_get_drvdata(dev);
+	struct i2c_client *client = data->client;
+	int channel = attr->index;
+	unsigned char ras_datas[MAX_READ_BLOCK_LENGTH + 2];
+	unsigned char msg[MAX_MSG_LEN] = {'\0'};
+	struct ras_48bytes_info errInfo;
+	s32 errCount = 1, errLength = 0;
+	u8 i = 0;
+	s32 ret;
+
+	if (channel >= NUM_48BYTES_ERR_TYPE)
+		goto noerror;
+	errInfo = list_ras_48bytes_info[channel];
+
+	memset(ras_datas, 0xff, MAX_READ_BLOCK_LENGTH + 2);
+
+	errCount = i2c_smbus_read_word_swapped(client, errInfo.countAddr);
+	if (errCount <= 0)
+		goto noerror;
+
+	if (errCount > MAX_READ_ERROR)
+		errCount = MAX_READ_ERROR;
+
+	for (i = 0; i < errCount; i++) {
+		errLength = i2c_smbus_read_word_swapped(client,
+			errInfo.lenAddr);
+		if (errLength <= 0)
+			goto end;
+		if (errLength > MAX_READ_BLOCK_LENGTH)
+			errLength = MAX_READ_BLOCK_LENGTH;
+
+		ret = read_i2c_block_data(client, errInfo.dataAddr,
+			errLength, ras_datas);
+		if (ret < 0)
+			goto end;
+
+		snprintf(msg, MAX_MSG_LEN, "%s", "");
+		format_error_output(ras_datas, MAX_READ_BLOCK_LENGTH + 2,
+			msg, MAX_MSG_LEN);
+		strcat(msg, "\n");
+
+		/* go to next error */
+		ret = i2c_smbus_write_word_swapped(client,
+			errInfo.countAddr, 0x100);
+		if (ret < 0)
+			goto end;
+
+		/* add error message to buffer */
+		strncat(buf, msg, strlen(msg));
+	}
+end:
+	return strlen(buf);
+noerror:
+	return scnprintf(buf, PAGE_SIZE, "0\n");
+}
 
 static void smpro_init_device(struct i2c_client *client,
 				struct smpro_data *data)
@@ -673,11 +859,36 @@ static SENSOR_DEVICE_ATTR(curr3_label, 0444, show_label, NULL, 3);
 static SENSOR_DEVICE_ATTR(curr4_label, 0444, show_label, NULL, 4);
 static SENSOR_DEVICE_ATTR(curr5_label, 0444, show_label, NULL, 17);
 
+static SENSOR_DEVICE_ATTR(errors_core_ce, 0444, smpro_ras_48bytes_read, NULL,
+			CORE_CE_ERRS);
+static SENSOR_DEVICE_ATTR(errors_core_ue, 0444, smpro_ras_48bytes_read, NULL,
+			CORE_UE_ERRS);
+static SENSOR_DEVICE_ATTR(errors_mem_ce, 0444, smpro_ras_48bytes_read, NULL,
+			MEM_CE_ERRS);
+static SENSOR_DEVICE_ATTR(errors_mem_ue, 0444, smpro_ras_48bytes_read, NULL,
+			MEM_UE_ERRS);
+static SENSOR_DEVICE_ATTR(errors_pcie_ce, 0444, smpro_ras_48bytes_read, NULL,
+			PCIE_CE_ERRS);
+static SENSOR_DEVICE_ATTR(errors_pcie_ue, 0444, smpro_ras_48bytes_read, NULL,
+			PCIE_UE_ERRS);
+static SENSOR_DEVICE_ATTR(errors_other_ce, 0444, smpro_ras_48bytes_read, NULL,
+			OTHER_CE_ERRS);
+static SENSOR_DEVICE_ATTR(errors_other_ue, 0444, smpro_ras_48bytes_read, NULL,
+			OTHER_UE_ERRS);
+
 static struct attribute *smpro_attrs[] = {
 	&sensor_dev_attr_gpi_boot_stage_select.dev_attr.attr,
 	&sensor_dev_attr_gpi_boot_stage_status_lo.dev_attr.attr,
 	&sensor_dev_attr_gpi_boot_stage_cur_stage.dev_attr.attr,
 	&sensor_dev_attr_acpi_power_limit.dev_attr.attr,
+	&sensor_dev_attr_errors_core_ce.dev_attr.attr,
+	&sensor_dev_attr_errors_core_ue.dev_attr.attr,
+	&sensor_dev_attr_errors_mem_ce.dev_attr.attr,
+	&sensor_dev_attr_errors_mem_ue.dev_attr.attr,
+	&sensor_dev_attr_errors_pcie_ce.dev_attr.attr,
+	&sensor_dev_attr_errors_pcie_ue.dev_attr.attr,
+	&sensor_dev_attr_errors_other_ce.dev_attr.attr,
+	&sensor_dev_attr_errors_other_ue.dev_attr.attr,
 
 	&sensor_dev_attr_temp1_label.dev_attr.attr,
 	&sensor_dev_attr_temp2_label.dev_attr.attr,
