@@ -182,6 +182,14 @@
 #define MAX_READ_ERROR                  35
 #define MAX_MSG_LEN			128
 
+#define RAS_SMPRO_ERRS			0
+#define RAS_PMPRO_ERRS			1
+/* Bit masks */
+#define BIT_0		0x0001
+#define BIT_1		0x0002
+#define BIT_2		0x0004
+#define BIT_8		0x0100
+
 enum RAS_48BYTES_ERR_TYPES {
 	CORE_CE_ERRS,
 	CORE_UE_ERRS,
@@ -239,6 +247,34 @@ struct ras_48bytes_info list_ras_48bytes_info[NUM_48BYTES_ERR_TYPE] = {
 		GPI_OTHER_CE_ERR_DATA_REG},
 	{GPI_OTHER_UE_ERR_CNT_REG, GPI_OTHER_UE_ERR_LEN_REG,
 		GPI_OTHER_UE_ERR_DATA_REG},
+};
+
+/*
+ * List of SCP registers which are used to get
+ * one type of RAS Internal errors.
+ */
+struct ras_internal_info {
+	u8 typeAddr;
+	u8 errInfoLo;
+	u8 errInfoHi;
+	u8 errDataHi;
+	u8 errDataLo;
+	u8 warnInfoLo;
+	u8 warnInfoHi;
+};
+
+struct ras_internal_info list_ras_internal_info[2] = {
+	{GPI_ERR_SMPRO_TYPE_REG,
+	GPI_ERR_SMPRO_INFO_LO_REG, GPI_ERR_SMPRO_INFO_HI_REG,
+	GPI_ERR_SMPRO_DATA_LO_REG, GPI_ERR_SMPRO_DATA_HI_REG,
+	GPI_WARN_SMPRO_INFO_LO_REG, GPI_WARN_SMPRO_INFO_HI_REG
+	},
+	{
+	GPI_ERR_PMPRO_TYPE_REG,
+	GPI_ERR_PMPRO_INFO_LO_REG, GPI_ERR_PMPRO_INFO_HI_REG,
+	GPI_ERR_PMPRO_DATA_LO_REG, GPI_ERR_PMPRO_DATA_HI_REG,
+	GPI_WARN_PMPRO_INFO_LO_REG, GPI_WARN_PMPRO_INFO_HI_REG
+	},
 };
 
 struct smpro_data {
@@ -446,6 +482,116 @@ end:
 	return strlen(buf);
 noerror:
 	return scnprintf(buf, PAGE_SIZE, "0\n");
+}
+
+static s32 smpro_ras_internal_get_info(struct i2c_client *client, u8 addr,
+	u8 addr1, u8 addr2, u8 addr3, u8 subtype, char *buf)
+{
+	s32 retHi = 0, retLo = 0, dataLo = 0, dataHi = 0;
+
+	snprintf(buf, MAX_MSG_LEN, "%s", "");
+	retLo = i2c_smbus_read_word_swapped(client, addr);
+	if (retLo < 0)
+		return -1;
+	retHi = i2c_smbus_read_word_swapped(client, addr1);
+	if (retHi < 0)
+		return -1;
+
+	if (addr2 != 0xff) {
+		dataLo = i2c_smbus_read_word_swapped(client, addr2);
+		if (dataLo < 0)
+			return -1;
+		dataHi = i2c_smbus_read_word_swapped(client, addr3);
+		if (dataHi < 0)
+			return -1;
+	}
+	/*
+	 * Output format:
+	 * <errType> <image> <dir> <Location> <errorCode> <data>
+	 * Where:
+	 *   + errType: SCP Error Type (3 bits)
+	 *      1: Warning
+	 *      2: Error
+	 *      4: Error with data
+	 *   + image: SCP Image Code (8 bits)
+	 *   + dir: Direction (1 bit)
+	 *      0: Enter
+	 *      1: Exit
+	 *   + location: SCP Module Location Code (8 bits)
+	 *   + errorCode: SCP Error Code (16 bits)
+	 *   + data : Extensive data (32 bits)
+	 *      All bits are 0 when errType is warning or error.
+	 * Reference Altra SCP UM.
+	 */
+	scnprintf(buf, MAX_MSG_LEN, "%01x %02x %01x %02x %04x %04x%04x\n",
+			subtype, (retHi & 0xf000) >> 12,
+			(retHi & 0x0800) >> 11, retHi & 0xff, retLo,
+			dataHi, dataLo);
+
+	return strlen(buf);
+}
+
+static int smpro_ras_internal_read(struct device *dev,
+				struct device_attribute *da, char *buf)
+{
+	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+	struct smpro_data *data = dev_get_drvdata(dev);
+	struct i2c_client *client = data->client;
+	int channel = attr->index;
+	struct ras_internal_info ras_info;
+	unsigned char msg[MAX_MSG_LEN] = {'\0'};
+	s32 ret = 0, curType = 0, ret1 = 0;
+
+	if (!(channel == RAS_SMPRO_ERRS || channel == RAS_PMPRO_ERRS))
+		return scnprintf(buf, PAGE_SIZE, "0\n");
+	/* read error status */
+	ret = i2c_smbus_read_word_swapped(client, GPI_RAS_ERR_REG);
+	if (ret < 0)
+		return scnprintf(buf, PAGE_SIZE, "0\n");
+
+	if (!((channel == RAS_SMPRO_ERRS && (ret & BIT_0)) ||
+		(channel == RAS_PMPRO_ERRS && (ret & BIT_1))))
+		return scnprintf(buf, PAGE_SIZE, "0\n");
+
+	ras_info = list_ras_internal_info[channel];
+	ret = i2c_smbus_read_word_swapped(client, ras_info.typeAddr);
+	curType = ret;
+	if (ret < 0)
+		return scnprintf(buf, PAGE_SIZE, "0\n");
+
+	/* Warning type */
+	if (ret & BIT_0) {
+		ret1 = smpro_ras_internal_get_info(client,
+			ras_info.warnInfoLo, ras_info.warnInfoHi,
+			0xff, 0xff, 1, msg);
+		if (ret1 < 0)
+			return scnprintf(buf, PAGE_SIZE, "0\n");
+		strncat(buf, msg, strlen(msg));
+	}
+	/* Error type */
+	if (ret & BIT_1) {
+		ret1 = smpro_ras_internal_get_info(client,
+			ras_info.errInfoLo, ras_info.errInfoHi,
+			0xff, 0xff, 2, msg);
+		if (ret1 < 0)
+			return scnprintf(buf, PAGE_SIZE, "0\n");
+		strncat(buf, msg, strlen(msg));
+	}
+	/* Error with data type */
+	if (ret & BIT_2) {
+		ret1 = smpro_ras_internal_get_info(client,
+		ras_info.errInfoLo, ras_info.errInfoHi,
+		ras_info.errDataLo, ras_info.errDataHi, 4, msg);
+		if (ret1 < 0)
+			return scnprintf(buf, PAGE_SIZE, "0\n");
+		strncat(buf, msg, strlen(msg));
+	}
+	/* clear the read errors */
+	ret = i2c_smbus_write_word_swapped(client,
+		ras_info.typeAddr, curType);
+
+
+	return strlen(buf);
 }
 
 static void smpro_init_device(struct i2c_client *client,
@@ -875,6 +1021,10 @@ static SENSOR_DEVICE_ATTR(errors_other_ce, 0444, smpro_ras_48bytes_read, NULL,
 			OTHER_CE_ERRS);
 static SENSOR_DEVICE_ATTR(errors_other_ue, 0444, smpro_ras_48bytes_read, NULL,
 			OTHER_UE_ERRS);
+static SENSOR_DEVICE_ATTR(errors_ras_sm, 0444, smpro_ras_internal_read, NULL,
+			RAS_SMPRO_ERRS);
+static SENSOR_DEVICE_ATTR(errors_ras_pm, 0444, smpro_ras_internal_read, NULL,
+			RAS_PMPRO_ERRS);
 
 static struct attribute *smpro_attrs[] = {
 	&sensor_dev_attr_gpi_boot_stage_select.dev_attr.attr,
@@ -889,6 +1039,8 @@ static struct attribute *smpro_attrs[] = {
 	&sensor_dev_attr_errors_pcie_ue.dev_attr.attr,
 	&sensor_dev_attr_errors_other_ce.dev_attr.attr,
 	&sensor_dev_attr_errors_other_ue.dev_attr.attr,
+	&sensor_dev_attr_errors_ras_sm.dev_attr.attr,
+	&sensor_dev_attr_errors_ras_pm.dev_attr.attr,
 
 	&sensor_dev_attr_temp1_label.dev_attr.attr,
 	&sensor_dev_attr_temp2_label.dev_attr.attr,
