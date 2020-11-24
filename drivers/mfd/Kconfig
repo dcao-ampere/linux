@@ -1201,6 +1201,16 @@ config MFD_SL28CPLD
 	  It can be found on the following boards:
 		* SMARC-sAL28
 
+config MFD_SMPRO
+	tristate "Ampere Computing MFD SMPRO core driver"
+	select MFD_SIMPLE_MFD_I2C
+	help
+	  Say yes here to enable support for Ampere Computing SMPro driver
+	  management controller.
+
+	  Ampere Computing SMPro expose a i2c regmap interface so that it can
+	  be accessed by children devices.
+
 config MFD_SM501
 	tristate "Silicon Motion SM501"
 	depends on HAS_DMA
