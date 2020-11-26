@@ -542,23 +542,24 @@ static ssize_t smpro_err_internal_read(struct device *dev,
 	unsigned char msg[MAX_MSG_LEN] = {'\0'};
 	s32 ret = 0, curType = 0, ret1 = 0;
 
+	*buf = 0;
 	if (!(channel == RAS_SMPRO_ERRS || channel == RAS_PMPRO_ERRS))
-		return scnprintf(buf, PAGE_SIZE, "0\n");
+		goto done;
 
 	/* read error status */
 	ret = i2c_smbus_read_word_swapped(client, GPI_RAS_ERR_REG);
 	if (ret < 0)
-		return scnprintf(buf, PAGE_SIZE, "0\n");
+		goto done;
 
 	if (!((channel == RAS_SMPRO_ERRS && (ret & BIT_0)) ||
 		(channel == RAS_PMPRO_ERRS && (ret & BIT_1))))
-		return scnprintf(buf, PAGE_SIZE, "0\n");
+		goto done;
 
 	err_info = list_smpro_int_error_hdr[channel];
 	ret = i2c_smbus_read_word_swapped(client, err_info.err_type);
 	curType = ret;
 	if (ret < 0)
-		return scnprintf(buf, PAGE_SIZE, "0\n");
+		goto done;
 
 	/* Warning type */
 	if (ret & BIT_0) {
@@ -566,7 +567,7 @@ static ssize_t smpro_err_internal_read(struct device *dev,
 					      err_info.warn_info_high,
 					      0xff, 0xff, 1, msg);
 		if (ret1 < 0)
-			return scnprintf(buf, PAGE_SIZE, "0\n");
+			goto done;
 		strncat(buf, msg, strlen(msg));
 	}
 	/* Error type */
@@ -575,7 +576,7 @@ static ssize_t smpro_err_internal_read(struct device *dev,
 					      err_info.err_info_high,
 					      0xff, 0xff, 2, msg);
 		if (ret1 < 0)
-			return scnprintf(buf, PAGE_SIZE, "0\n");
+			goto done;
 		strncat(buf, msg, strlen(msg));
 	}
 	/* Error with data type */
@@ -586,12 +587,13 @@ static ssize_t smpro_err_internal_read(struct device *dev,
 					      err_info.err_data_low,
 					      err_info.err_data_high, 4, msg);
 		if (ret1 < 0)
-			return scnprintf(buf, PAGE_SIZE, "0\n");
+			goto done;
 		strncat(buf, msg, strlen(msg));
 	}
 	/* clear the read errors */
 	ret = i2c_smbus_write_word_swapped(client, err_info.err_type, curType);
 
+done:
 	return strlen(buf);
 }
 
