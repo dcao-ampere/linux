@@ -28,167 +28,169 @@
 #include <linux/slab.h>
 
 /* Identification Registers */
-#define REG_SPEC_VERSION_REG            0x00
-#define VERSION_REG                     0x01
-#define MANUFACTURER_ID_REG             0x02
-#define DEVICE_ID_REG                   0x03
-#define BUILD_ID_LO_REG                 0x09
-#define BUILD_ID_HI_REG                 0x0A
+#define REG_SPEC_VERSION_REG		0x00
+#define VERSION_REG			0x01
+#define MANUFACTURER_ID_REG		0x02
+#define DEVICE_ID_REG			0x03
+#define BUILD_ID_LO_REG			0x09
+#define BUILD_ID_HI_REG			0x0A
 
 /* Capability Registers  */
-#define TEMP_SENSOR_SUPPORT_REG         0x05
-#define PWR_SENSOR_SUPPORT_REG          0x06
-#define VOLT_SENSOR_SUPPORT_REG         0x07
-#define OTHER_CAP_REG                   0x08
-#define CORE_CLUSTER_CNT_REG            0x0B
-#define SYS_CACHE_PCIE_CNT_REG          0x0C
-#define SOCKET_INFO_REG                 0x0D
-#define SOC_TDP_REG                     0x0E
+#define TEMP_SENSOR_SUPPORT_REG		0x05
+#define PWR_SENSOR_SUPPORT_REG		0x06
+#define VOLT_SENSOR_SUPPORT_REG		0x07
+#define OTHER_CAP_REG			0x08
+#define CORE_CLUSTER_CNT_REG		0x0B
+#define SYS_CACHE_PCIE_CNT_REG		0x0C
+#define SOCKET_INFO_REG			0x0D
+#define SOC_TDP_REG			0x0E
 
 /* Logical Power Sensor Registers */
-#define SOC_TEMP_REG                    0x10
-#define SOC_VRD_TEMP_REG                0x11
-#define DIMM_VRD_TEMP_REG               0x12
-#define CORE_VRD_TEMP_REG               0x13
-#define CH0_DIMM_TEMP_REG               0x14
-#define CH1_DIMM_TEMP_REG               0x15
-#define CH2_DIMM_TEMP_REG               0x16
-#define CH3_DIMM_TEMP_REG               0x17
-#define CH4_DIMM_TEMP_REG               0x18
-#define CH5_DIMM_TEMP_REG               0x19
-#define CH6_DIMM_TEMP_REG               0x1A
-#define CH7_DIMM_TEMP_REG               0x1B
-#define RCA_VRD_TEMP_REG                0x1C
+#define SOC_TEMP_REG			0x10
+#define SOC_VRD_TEMP_REG		0x11
+#define DIMM_VRD_TEMP_REG		0x12
+#define CORE_VRD_TEMP_REG		0x13
+#define CH0_DIMM_TEMP_REG		0x14
+#define CH1_DIMM_TEMP_REG		0x15
+#define CH2_DIMM_TEMP_REG		0x16
+#define CH3_DIMM_TEMP_REG		0x17
+#define CH4_DIMM_TEMP_REG		0x18
+#define CH5_DIMM_TEMP_REG		0x19
+#define CH6_DIMM_TEMP_REG		0x1A
+#define CH7_DIMM_TEMP_REG		0x1B
+#define RCA_VRD_TEMP_REG		0x1C
 
-#define CORE_VRD_PWR_REG                0x20
-#define SOC_VRD_PWR_REG                 0x21
-#define DIMM_VRD1_PWR_REG               0x22
-#define DIMM_VRD2_PWR_REG               0x23
-#define CORE_VRD_PWR_MW_REG             0x26
-#define SOC_VRD_PWR_MW_REG              0x27
-#define DIMM_VRD1_PWR_MW_REG            0x28
-#define DIMM_VRD2_PWR_MW_REG            0x29
-#define RCA_VRD_PWR_REG                 0x2A
-#define RCA_VRD_PWR_MW_REG              0x2B
+#define CORE_VRD_PWR_REG		0x20
+#define SOC_VRD_PWR_REG			0x21
+#define DIMM_VRD1_PWR_REG		0x22
+#define DIMM_VRD2_PWR_REG		0x23
+#define CORE_VRD_PWR_MW_REG		0x26
+#define SOC_VRD_PWR_MW_REG		0x27
+#define DIMM_VRD1_PWR_MW_REG		0x28
+#define DIMM_VRD2_PWR_MW_REG		0x29
+#define RCA_VRD_PWR_REG			0x2A
+#define RCA_VRD_PWR_MW_REG		0x2B
 
-#define MEM_HOT_THRESHOLD_REG           0x32
-#define SOC_VR_HOT_THRESHOLD_REG        0x33
-#define CORE_VRD_VOLT_REG               0x34
-#define SOC_VRD_VOLT_REG                0x35
-#define DIMM_VRD1_VOLT_REG              0x36
-#define DIMM_VRD2_VOLT_REG              0x37
-#define RCA_VRD_VOLT_REG                0x38
+#define MEM_HOT_THRESHOLD_REG		0x32
+#define SOC_VR_HOT_THRESHOLD_REG	0x33
+#define CORE_VRD_VOLT_REG		0x34
+#define SOC_VRD_VOLT_REG		0x35
+#define DIMM_VRD1_VOLT_REG		0x36
+#define DIMM_VRD2_VOLT_REG		0x37
+#define RCA_VRD_VOLT_REG		0x38
 
-#define CORE_VRD_CURR_REG               0x39
-#define SOC_VRD_CURR_REG                0x3A
-#define DIMM_VRD1_CURR_REG              0x3B
-#define DIMM_VRD2_CURR_REG              0x3C
-#define RCA_VRD_CURR_REG                0x3D
+#define CORE_VRD_CURR_REG		0x39
+#define SOC_VRD_CURR_REG		0x3A
+#define DIMM_VRD1_CURR_REG		0x3B
+#define DIMM_VRD2_CURR_REG		0x3C
+#define RCA_VRD_CURR_REG		0x3D
 
 /* Add for DIMM group */
-#define DIMM_GROUP_DUMMY_REG            0xFF
+#define DIMM_GROUP_DUMMY_REG		0xFF
 
 /* GPI Control set  Registers */
-#define GPI_CTRL0_REG                   0x50
-#define GPI_CTRL1_REG                   0x51
-#define GPI_CTRL2_REG                   0x52
-#define GPI_CTRL3_REG                   0x53
-#define GPI_CE_UE_MASK_REG              0x54
+#define GPI_CTRL0_REG			0x50
+#define GPI_CTRL1_REG			0x51
+#define GPI_CTRL2_REG			0x52
+#define GPI_CTRL3_REG			0x53
+#define GPI_CE_UE_MASK_REG		0x54
 
 /* GPI data set Registers */
-#define GPI_DATA_SET_REG                0x60
-#define GPI_DATA_SET0_REG               0x61
-#define GPI_DATA_SET1_REG               0x62
-#define GPI_DATA_SET2_REG               0x63
-#define GPI_DATA_SET3_REG               0x64
+#define GPI_DATA_SET_REG		0x60
+#define GPI_DATA_SET0_REG		0x61
+#define GPI_DATA_SET1_REG		0x62
+#define GPI_DATA_SET2_REG		0x63
+#define GPI_DATA_SET3_REG		0x64
 
 /* GPI Status Registers */
-#define GPI_CLUSTER_ERR_SET0_REG        0x70
-#define GPI_VRD_FAULT_ERR_REG           0x78
-#define GPI_VRD_HOT_ERR_REG             0x79
-#define GPI_DIMM_HOT_ERR_REG            0x7A
-#define GPI_BOOT_ERR1_REG               0x7B
-#define GPI_BOOT_ERR2_REG               0x7C
+#define GPI_CLUSTER_ERR_SET0_REG	0x70
+#define GPI_VRD_FAULT_ERR_REG		0x78
+#define GPI_VRD_HOT_ERR_REG		0x79
+#define GPI_DIMM_HOT_ERR_REG		0x7A
+#define GPI_BOOT_ERR1_REG		0x7B
+#define GPI_BOOT_ERR2_REG		0x7C
 
 /* GPI RAS Error Registers */
-#define GPI_WDT_STS_REG                 0x7D
-#define GPI_RAS_ERR_REG                 0x7E
+#define GPI_WDT_STS_REG			0x7D
+#define GPI_RAS_ERR_REG			0x7E
 
 /*  SPI NOR Authentication Failure */
-#define GPI_SPI_NOR_AUTHFAIL_REG        0x7F
+#define GPI_SPI_NOR_AUTHFAIL_REG	0x7F
 
 /* Core and L2C Error Registers */
-#define GPI_CORE_CE_ERR_CNT_REG         0x80
-#define GPI_CORE_CE_ERR_LEN_REG         0x81
-#define GPI_CORE_CE_ERR_DATA_REG        0x82
-#define GPI_CORE_UE_ERR_CNT_REG         0x83
-#define GPI_CORE_UE_ERR_LEN_REG         0x84
-#define GPI_CORE_UE_ERR_DATA_REG        0x85
+#define CORE_CE_ERR_CNT_REG		0x80
+#define CORE_CE_ERR_LEN_REG		0x81
+#define CORE_CE_ERR_DATA_REG		0x82
+#define CORE_UE_ERR_CNT_REG		0x83
+#define CORE_UE_ERR_LEN_REG		0x84
+#define CORE_UE_ERR_DATA_REG		0x85
 
 /* Memory Error Registers */
-#define GPI_MEM_CE_ERR_CNT_REG          0x90
-#define GPI_MEM_CE_ERR_LEN_REG          0x91
-#define GPI_MEM_CE_ERR_DATA_REG         0x92
-#define GPI_MEM_UE_ERR_CNT_REG          0x93
-#define GPI_MEM_UE_ERR_LEN_REG          0x94
-#define GPI_MEM_UE_ERR_DATA_REG         0x95
+#define MEM_CE_ERR_CNT_REG		0x90
+#define MEM_CE_ERR_LEN_REG		0x91
+#define MEM_CE_ERR_DATA_REG		0x92
+#define MEM_UE_ERR_CNT_REG		0x93
+#define MEM_UE_ERR_LEN_REG		0x94
+#define MEM_UE_ERR_DATA_REG		0x95
 
 /* RAS Error/Warning Registers */
-#define GPI_ERR_SMPRO_TYPE_REG          0xA0
-#define GPI_ERR_PMPRO_TYPE_REG          0xA1
-#define GPI_ERR_SMPRO_INFO_LO_REG       0xA2
-#define GPI_ERR_SMPRO_INFO_HI_REG       0xA3
-#define GPI_ERR_SMPRO_DATA_LO_REG       0xA4
-#define GPI_ERR_SMPRO_DATA_HI_REG       0xA5
-#define GPI_WARN_SMPRO_INFO_LO_REG      0xAA
-#define GPI_WARN_SMPRO_INFO_HI_REG      0xAB
-#define GPI_ERR_PMPRO_INFO_LO_REG       0xA6
-#define GPI_ERR_PMPRO_INFO_HI_REG       0xA7
-#define GPI_ERR_PMPRO_DATA_LO_REG       0xA8
-#define GPI_ERR_PMPRO_DATA_HI_REG       0xA9
-#define GPI_WARN_PMPRO_INFO_LO_REG      0xAC
-#define GPI_WARN_PMPRO_INFO_HI_REG      0xAD
+#define ERR_SMPRO_TYPE_REG		0xA0
+#define ERR_PMPRO_TYPE_REG		0xA1
+#define ERR_SMPRO_INFO_LO_REG		0xA2
+#define ERR_SMPRO_INFO_HI_REG		0xA3
+#define ERR_SMPRO_DATA_LO_REG		0xA4
+#define ERR_SMPRO_DATA_HI_REG		0xA5
+#define WARN_SMPRO_INFO_LO_REG		0xAA
+#define WARN_SMPRO_INFO_HI_REG		0xAB
+#define ERR_PMPRO_INFO_LO_REG		0xA6
+#define ERR_PMPRO_INFO_HI_REG		0xA7
+#define ERR_PMPRO_DATA_LO_REG		0xA8
+#define ERR_PMPRO_DATA_HI_REG		0xA9
+#define WARN_PMPRO_INFO_LO_REG		0xAC
+#define WARN_PMPRO_INFO_HI_REG		0xAD
 
 /* Boot Stage/Progress Registers */
-#define GPI_BOOT_STAGE_SELECT_REG       0xB0
-#define GPI_BOOT_STAGE_STATUS_LO_REG    0xB1
-#define GPI_BOOT_STAGE_CUR_STAGE_REG    0xB2
+#define BOOT_STAGE_SELECT_REG		0xB0
+#define BOOT_STAGE_STATUS_LO_REG	0xB1
+#define BOOT_STAGE_CUR_STAGE_REG	0xB2
+#define BOOT_STAGE_STATUS_HI_REG	0xB2
 
 /* PCIE Error Registers */
-#define GPI_PCIe_CE_ERR_CNT_REG         0xC0
-#define GPI_PCIe_CE_ERR_LEN_REG         0xC1
-#define GPI_PCIe_CE_ERR_DATA_REG        0xC2
-#define GPI_PCIe_UE_ERR_CNT_REG         0xC3
-#define GPI_PCIe_UE_ERR_LEN_REG         0xC4
-#define GPI_PCIe_UE_ERR_DATA_REG        0xC5
+#define PCIE_CE_ERR_CNT_REG		0xC0
+#define PCIE_CE_ERR_LEN_REG		0xC1
+#define PCIE_CE_ERR_DATA_REG		0xC2
+#define PCIE_UE_ERR_CNT_REG		0xC3
+#define PCIE_UE_ERR_LEN_REG		0xC4
+#define PCIE_UE_ERR_DATA_REG		0xC5
 
 /* Other Error Registers */
-#define GPI_OTHER_CE_ERR_CNT_REG        0xD0
-#define GPI_OTHER_CE_ERR_LEN_REG        0xD1
-#define GPI_OTHER_CE_ERR_DATA_REG       0xD2
-#define GPI_OTHER_UE_ERR_CNT_REG        0xD8
-#define GPI_OTHER_UE_ERR_LEN_REG        0xD9
-#define GPI_OTHER_UE_ERR_DATA_REG       0xDA
+#define OTHER_CE_ERR_CNT_REG		0xD0
+#define OTHER_CE_ERR_LEN_REG		0xD1
+#define OTHER_CE_ERR_DATA_REG		0xD2
+#define OTHER_UE_ERR_CNT_REG		0xD8
+#define OTHER_UE_ERR_LEN_REG		0xD9
+#define OTHER_UE_ERR_DATA_REG		0xDA
 
 /* ACPI State Registers */
-#define GPI_ACPI_SYSTEM_STATE_REG       0xE0
-#define GPI_ACPI_CPPC_CLUSTER_SEL_REG   0xE3
-#define GPI_ACPI_CPPC_CLUSTER_DATA_REG  0xE4
-#define GPI_ACPI_POWER_LIMIT_REG        0xE5
+#define ACPI_SYSTEM_STATE_REG		0xE0
+#define ACPI_CPPC_CLUSTER_SEL_REG	0xE3
+#define ACPI_CPPC_CLUSTER_DATA_REG	0xE4
+#define ACPI_POWER_LIMIT_REG		0xE5
 
 /* I2C read block data constant */
-#define MAX_READ_BLOCK_LENGTH           48
-#define NUM_I2C_MESSAGES                2
-#define MAX_READ_ERROR                  35
+#define MAX_READ_BLOCK_LENGTH		48
+#define NUM_I2C_MESSAGES		2
+#define MAX_READ_ERROR			35
 #define MAX_MSG_LEN			128
 
 #define RAS_SMPRO_ERRS			0
 #define RAS_PMPRO_ERRS			1
+
 /* Bit masks */
-#define BIT_0		0x0001
-#define BIT_1		0x0002
-#define BIT_2		0x0004
-#define BIT_8		0x0100
+#define BIT_0				0x0001
+#define BIT_1				0x0002
+#define BIT_2				0x0004
+#define BIT_8				0x0100
 
 enum RAS_48BYTES_ERR_TYPES {
 	CORE_CE_ERRS,
@@ -203,7 +205,7 @@ enum RAS_48BYTES_ERR_TYPES {
 };
 
 /*
- * The outputs from Ras Core/Memory/PCIe/Others UE/CE APIs follow below format:
+ * The output of Core/Memory/PCIe/Others UE/CE errors follows below format:
  * <Error Type>  <Error SubType>  <Instance>  <Error Status> \
  * <Error Address>  <Error Misc 0> <Error Misc 1> <Error Misc2> <Error Misc 3>
  * Where:
@@ -214,66 +216,63 @@ enum RAS_48BYTES_ERR_TYPES {
  *  + Error Status: Encode of error status. (4 bytes)
  *  + Error Address: The address in device causes the errors. (8 bytes)
  *  + Error Misc 0/1/2/3: Addition info about the errors. (8 bytes for each)
- * Reference Altra SOC BMC Interface spec.
+ * Reference Altra SOC BMC Interface specification.
  */
-u_int8_t sizeFields[9] = {1, 1, 2, 4, 8, 8, 8, 8, 8};
+u_int8_t field_size[9] = {1, 1, 2, 4, 8, 8, 8, 8, 8};
 
-struct ras_48bytes_info {
-	/* Number of the RAS errors register */
-	u8 countAddr;
-	/* Number of data bytes register */
-	u8 lenAddr;
-	/* Data SCP register */
-	u8 dataAddr;
+struct smpro_error_hdr {
+	u8 err_count;	/* Number of the RAS errors */
+	u8 err_len;	/* Number of data bytes */
+	u8 err_data;	/* Start of 48-byte data */
 };
 /*
  * Included Address of registers to get Count, Length of data and Data
- * of the 48 bytes data RAS errors
+ * of the 48 bytes error data
  */
-struct ras_48bytes_info list_ras_48bytes_info[NUM_48BYTES_ERR_TYPE] = {
-	{GPI_CORE_CE_ERR_CNT_REG, GPI_CORE_CE_ERR_LEN_REG,
-		GPI_CORE_CE_ERR_DATA_REG},
-	{GPI_CORE_UE_ERR_CNT_REG, GPI_CORE_UE_ERR_LEN_REG,
-		GPI_CORE_UE_ERR_DATA_REG},
-	{GPI_MEM_CE_ERR_CNT_REG, GPI_MEM_CE_ERR_LEN_REG,
-		GPI_MEM_CE_ERR_DATA_REG},
-	{GPI_MEM_UE_ERR_CNT_REG, GPI_MEM_UE_ERR_LEN_REG,
-		GPI_MEM_UE_ERR_DATA_REG},
-	{GPI_PCIe_CE_ERR_CNT_REG, GPI_PCIe_CE_ERR_LEN_REG,
-		GPI_PCIe_CE_ERR_DATA_REG},
-	{GPI_PCIe_UE_ERR_CNT_REG, GPI_PCIe_UE_ERR_LEN_REG,
-		GPI_PCIe_UE_ERR_DATA_REG},
-	{GPI_OTHER_CE_ERR_CNT_REG, GPI_OTHER_CE_ERR_LEN_REG,
-		GPI_OTHER_CE_ERR_DATA_REG},
-	{GPI_OTHER_UE_ERR_CNT_REG, GPI_OTHER_UE_ERR_LEN_REG,
-		GPI_OTHER_UE_ERR_DATA_REG},
+struct smpro_error_hdr smpro_error_table[NUM_48BYTES_ERR_TYPE] = {
+	{CORE_CE_ERR_CNT_REG, CORE_CE_ERR_LEN_REG,
+		CORE_CE_ERR_DATA_REG},
+	{CORE_UE_ERR_CNT_REG, CORE_UE_ERR_LEN_REG,
+		CORE_UE_ERR_DATA_REG},
+	{MEM_CE_ERR_CNT_REG, MEM_CE_ERR_LEN_REG,
+		MEM_CE_ERR_DATA_REG},
+	{MEM_UE_ERR_CNT_REG, MEM_UE_ERR_LEN_REG,
+		MEM_UE_ERR_DATA_REG},
+	{PCIE_CE_ERR_CNT_REG, PCIE_CE_ERR_LEN_REG,
+		PCIE_CE_ERR_DATA_REG},
+	{PCIE_UE_ERR_CNT_REG, PCIE_UE_ERR_LEN_REG,
+		PCIE_UE_ERR_DATA_REG},
+	{OTHER_CE_ERR_CNT_REG, OTHER_CE_ERR_LEN_REG,
+		OTHER_CE_ERR_DATA_REG},
+	{OTHER_UE_ERR_CNT_REG, OTHER_UE_ERR_LEN_REG,
+		OTHER_UE_ERR_DATA_REG},
 };
 
 /*
  * List of SCP registers which are used to get
  * one type of RAS Internal errors.
  */
-struct ras_internal_info {
-	u8 typeAddr;
-	u8 errInfoLo;
-	u8 errInfoHi;
-	u8 errDataHi;
-	u8 errDataLo;
-	u8 warnInfoLo;
-	u8 warnInfoHi;
+struct smpro_int_error_hdr {
+	u8 err_type;
+	u8 err_info_low;
+	u8 err_info_high;
+	u8 err_data_high;
+	u8 err_data_low;
+	u8 warn_info_low;
+	u8 warn_info_high;
 };
 
-struct ras_internal_info list_ras_internal_info[2] = {
-	{GPI_ERR_SMPRO_TYPE_REG,
-	GPI_ERR_SMPRO_INFO_LO_REG, GPI_ERR_SMPRO_INFO_HI_REG,
-	GPI_ERR_SMPRO_DATA_LO_REG, GPI_ERR_SMPRO_DATA_HI_REG,
-	GPI_WARN_SMPRO_INFO_LO_REG, GPI_WARN_SMPRO_INFO_HI_REG
+struct smpro_int_error_hdr list_smpro_int_error_hdr[2] = {
+	{ERR_SMPRO_TYPE_REG,
+	ERR_SMPRO_INFO_LO_REG, ERR_SMPRO_INFO_HI_REG,
+	ERR_SMPRO_DATA_LO_REG, ERR_SMPRO_DATA_HI_REG,
+	WARN_SMPRO_INFO_LO_REG, WARN_SMPRO_INFO_HI_REG
 	},
 	{
-	GPI_ERR_PMPRO_TYPE_REG,
-	GPI_ERR_PMPRO_INFO_LO_REG, GPI_ERR_PMPRO_INFO_HI_REG,
-	GPI_ERR_PMPRO_DATA_LO_REG, GPI_ERR_PMPRO_DATA_HI_REG,
-	GPI_WARN_PMPRO_INFO_LO_REG, GPI_WARN_PMPRO_INFO_HI_REG
+	ERR_PMPRO_TYPE_REG,
+	ERR_PMPRO_INFO_LO_REG, ERR_PMPRO_INFO_HI_REG,
+	ERR_PMPRO_DATA_LO_REG, ERR_PMPRO_DATA_HI_REG,
+	WARN_PMPRO_INFO_LO_REG, WARN_PMPRO_INFO_HI_REG
 	},
 };
 
@@ -316,7 +315,7 @@ static const u8 volt_regs[] = {
 	SOC_VRD_VOLT_REG,
 	DIMM_VRD1_VOLT_REG,
 	DIMM_VRD2_VOLT_REG,
-	/* vrd1 has higher priority than vrd2 using vrd1 as output for ddr */
+	/* VRD1 has higher priority than VRD2. Use VRD1 as output for ddr */
 	DIMM_VRD1_VOLT_REG,
 	RCA_VRD_VOLT_REG,
 };
@@ -402,7 +401,7 @@ static int read_i2c_block_data(struct i2c_client *client,
 }
 
 static int format_error_output(unsigned char datas[], size_t data_len,
-	char *buf, size_t buf_len)
+			       char *buf, size_t buf_len)
 {
 	unsigned char str[3] = {'\0'};
 	u8 x = 0, y = 0, curPos = 0;
@@ -412,39 +411,39 @@ static int format_error_output(unsigned char datas[], size_t data_len,
 	if (buf_len < MAX_MSG_LEN)
 		return 0;
 
-	for (x = 0; x < sizeof(sizeFields); x++) {
-		for (y = 0; y < sizeFields[x]; y++) {
+	for (x = 0; x < sizeof(field_size); x++) {
+		for (y = 0; y < field_size[x]; y++) {
 			snprintf(str, 3, "%02x",
-				datas[curPos + sizeFields[x] - y - 1]);
+				datas[curPos + field_size[x] - y - 1]);
 			strncat(buf, str, strlen(str));
 		}
 		strncat(buf, " ", strlen(" "));
-		curPos = curPos + sizeFields[x];
+		curPos = curPos + field_size[x];
 	}
 	return 1;
 }
 
-static int smpro_ras_48bytes_read(struct device *dev,
-				struct device_attribute *da, char *buf)
+static ssize_t smpro_error_data_read(struct device *dev,
+				 struct device_attribute *da, char *buf)
 {
 	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
 	struct smpro_data *data = dev_get_drvdata(dev);
 	struct i2c_client *client = data->client;
 	int channel = attr->index;
-	unsigned char ras_datas[MAX_READ_BLOCK_LENGTH + 2];
+	unsigned char err_data[MAX_READ_BLOCK_LENGTH + 2];
 	unsigned char msg[MAX_MSG_LEN] = {'\0'};
-	struct ras_48bytes_info errInfo;
+	struct smpro_error_hdr errInfo;
 	s32 errCount = 1, errLength = 0;
 	u8 i = 0;
 	s32 ret;
 
 	if (channel >= NUM_48BYTES_ERR_TYPE)
 		goto noerror;
-	errInfo = list_ras_48bytes_info[channel];
+	errInfo = smpro_error_table[channel];
 
-	memset(ras_datas, 0xff, MAX_READ_BLOCK_LENGTH + 2);
+	memset(err_data, 0xff, MAX_READ_BLOCK_LENGTH + 2);
 
-	errCount = i2c_smbus_read_word_swapped(client, errInfo.countAddr);
+	errCount = i2c_smbus_read_word_swapped(client, errInfo.err_count);
 	if (errCount <= 0)
 		goto noerror;
 
@@ -453,38 +452,38 @@ static int smpro_ras_48bytes_read(struct device *dev,
 
 	for (i = 0; i < errCount; i++) {
 		errLength = i2c_smbus_read_word_swapped(client,
-			errInfo.lenAddr);
+			errInfo.err_len);
 		if (errLength <= 0)
 			goto end;
 		if (errLength > MAX_READ_BLOCK_LENGTH)
 			errLength = MAX_READ_BLOCK_LENGTH;
 
-		ret = read_i2c_block_data(client, errInfo.dataAddr,
-			errLength, ras_datas);
+		ret = read_i2c_block_data(client, errInfo.err_data,
+			errLength, err_data);
 		if (ret < 0)
 			goto end;
 
 		snprintf(msg, MAX_MSG_LEN, "%s", "");
-		format_error_output(ras_datas, MAX_READ_BLOCK_LENGTH + 2,
+		format_error_output(err_data, MAX_READ_BLOCK_LENGTH + 2,
 			msg, MAX_MSG_LEN);
 		strcat(msg, "\n");
 
 		/* go to next error */
 		ret = i2c_smbus_write_word_swapped(client,
-			errInfo.countAddr, 0x100);
+			errInfo.err_count, 0x100);
 		if (ret < 0)
 			goto end;
 
 		/* add error message to buffer */
 		strncat(buf, msg, strlen(msg));
 	}
-end:
-	return strlen(buf);
 noerror:
 	return scnprintf(buf, PAGE_SIZE, "0\n");
+end:
+	return strlen(buf);
 }
 
-static s32 smpro_ras_internal_get_info(struct i2c_client *client, u8 addr,
+static s32 smpro_err_int_get_info(struct i2c_client *client, u8 addr,
 	u8 addr1, u8 addr2, u8 addr3, u8 subtype, char *buf)
 {
 	s32 retHi = 0, retLo = 0, dataLo = 0, dataHi = 0;
@@ -521,7 +520,6 @@ static s32 smpro_ras_internal_get_info(struct i2c_client *client, u8 addr,
 	 *   + errorCode: SCP Error Code (16 bits)
 	 *   + data : Extensive data (32 bits)
 	 *      All bits are 0 when errType is warning or error.
-	 * Reference Altra SCP UM.
 	 */
 	scnprintf(buf, MAX_MSG_LEN, "%01x %02x %01x %02x %04x %04x%04x\n",
 			subtype, (retHi & 0xf000) >> 12,
@@ -531,19 +529,20 @@ static s32 smpro_ras_internal_get_info(struct i2c_client *client, u8 addr,
 	return strlen(buf);
 }
 
-static int smpro_ras_internal_read(struct device *dev,
+static ssize_t smpro_err_internal_read(struct device *dev,
 				struct device_attribute *da, char *buf)
 {
 	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
 	struct smpro_data *data = dev_get_drvdata(dev);
 	struct i2c_client *client = data->client;
 	int channel = attr->index;
-	struct ras_internal_info ras_info;
+	struct smpro_int_error_hdr err_info;
 	unsigned char msg[MAX_MSG_LEN] = {'\0'};
 	s32 ret = 0, curType = 0, ret1 = 0;
 
 	if (!(channel == RAS_SMPRO_ERRS || channel == RAS_PMPRO_ERRS))
 		return scnprintf(buf, PAGE_SIZE, "0\n");
+
 	/* read error status */
 	ret = i2c_smbus_read_word_swapped(client, GPI_RAS_ERR_REG);
 	if (ret < 0)
@@ -553,43 +552,43 @@ static int smpro_ras_internal_read(struct device *dev,
 		(channel == RAS_PMPRO_ERRS && (ret & BIT_1))))
 		return scnprintf(buf, PAGE_SIZE, "0\n");
 
-	ras_info = list_ras_internal_info[channel];
-	ret = i2c_smbus_read_word_swapped(client, ras_info.typeAddr);
+	err_info = list_smpro_int_error_hdr[channel];
+	ret = i2c_smbus_read_word_swapped(client, err_info.err_type);
 	curType = ret;
 	if (ret < 0)
 		return scnprintf(buf, PAGE_SIZE, "0\n");
 
 	/* Warning type */
 	if (ret & BIT_0) {
-		ret1 = smpro_ras_internal_get_info(client,
-			ras_info.warnInfoLo, ras_info.warnInfoHi,
-			0xff, 0xff, 1, msg);
+		ret1 = smpro_err_int_get_info(client, err_info.warn_info_low,
+					      err_info.warn_info_high,
+					      0xff, 0xff, 1, msg);
 		if (ret1 < 0)
 			return scnprintf(buf, PAGE_SIZE, "0\n");
 		strncat(buf, msg, strlen(msg));
 	}
 	/* Error type */
 	if (ret & BIT_1) {
-		ret1 = smpro_ras_internal_get_info(client,
-			ras_info.errInfoLo, ras_info.errInfoHi,
-			0xff, 0xff, 2, msg);
+		ret1 = smpro_err_int_get_info(client, err_info.err_info_low,
+					      err_info.err_info_high,
+					      0xff, 0xff, 2, msg);
 		if (ret1 < 0)
 			return scnprintf(buf, PAGE_SIZE, "0\n");
 		strncat(buf, msg, strlen(msg));
 	}
 	/* Error with data type */
 	if (ret & BIT_2) {
-		ret1 = smpro_ras_internal_get_info(client,
-		ras_info.errInfoLo, ras_info.errInfoHi,
-		ras_info.errDataLo, ras_info.errDataHi, 4, msg);
+		ret1 = smpro_err_int_get_info(client,
+					      err_info.err_info_low,
+					      err_info.err_info_high,
+					      err_info.err_data_low,
+					      err_info.err_data_high, 4, msg);
 		if (ret1 < 0)
 			return scnprintf(buf, PAGE_SIZE, "0\n");
 		strncat(buf, msg, strlen(msg));
 	}
 	/* clear the read errors */
-	ret = i2c_smbus_write_word_swapped(client,
-		ras_info.typeAddr, curType);
-
+	ret = i2c_smbus_write_word_swapped(client, err_info.err_type, curType);
 
 	return strlen(buf);
 }
@@ -632,11 +631,12 @@ static void smpro_init_device(struct i2c_client *client,
 	ret = i2c_smbus_read_word_swapped(client, SOCKET_INFO_REG);
 	if (ret < 0)
 		return;
+
 	data->socket_info_reg = ret;
 }
 
 static int smpro_read_temp(struct device *dev, u32 attr, int channel,
-				long *val)
+			   long *val)
 {
 	struct smpro_data *data = dev_get_drvdata(dev);
 	struct i2c_client *client = data->client;
@@ -654,7 +654,7 @@ static int smpro_read_temp(struct device *dev, u32 attr, int channel,
 					highest_temp = ret;
 			}
 			if (highest_temp <= 0)
-				return ERR_PTR(highest_temp);
+				return -ERANGE;
 			*val = (highest_temp & 0x1ff) * 1000;
 		} else {
 			ret = i2c_smbus_read_word_swapped(client,
@@ -671,7 +671,7 @@ static int smpro_read_temp(struct device *dev, u32 attr, int channel,
 }
 
 static int smpro_read_in(struct device *dev, u32 attr, int channel,
-				long *val)
+			 long *val)
 {
 	struct smpro_data *data = dev_get_drvdata(dev);
 	struct i2c_client *client = data->client;
@@ -690,7 +690,7 @@ static int smpro_read_in(struct device *dev, u32 attr, int channel,
 }
 
 static int smpro_read_curr(struct device *dev, u32 attr, int channel,
-				long *val)
+			   long *val)
 {
 	struct smpro_data *data = dev_get_drvdata(dev);
 	struct i2c_client *client = data->client;
@@ -709,7 +709,7 @@ static int smpro_read_curr(struct device *dev, u32 attr, int channel,
 }
 
 static int smpro_read_power(struct device *dev, u32 attr, int channel,
-				long *val)
+			    long *val)
 {
 	struct smpro_data *data = dev_get_drvdata(dev);
 	struct i2c_client *client = data->client;
@@ -721,57 +721,57 @@ static int smpro_read_power(struct device *dev, u32 attr, int channel,
 		switch (channel) {
 		case PMD_VRD_PWR:
 			ret = i2c_smbus_read_word_swapped(client,
-				CORE_VRD_PWR_REG);
+							  CORE_VRD_PWR_REG);
 			ret_mw = i2c_smbus_read_word_swapped(client,
-				CORE_VRD_PWR_MW_REG);
+							     CORE_VRD_PWR_MW_REG);
 			break;
 		case SOC_VRD_PWR:
 			ret = i2c_smbus_read_word_swapped(client,
-				SOC_VRD_PWR_REG);
+							  SOC_VRD_PWR_REG);
 			ret_mw = i2c_smbus_read_word_swapped(client,
-				SOC_VRD_PWR_MW_REG);
+							     SOC_VRD_PWR_MW_REG);
 			break;
 		case DIMM_VRD1_PWR:
 			ret = i2c_smbus_read_word_swapped(client,
 			DIMM_VRD1_PWR_REG);
 			ret_mw = i2c_smbus_read_word_swapped(client,
-				DIMM_VRD1_PWR_MW_REG);
+							     DIMM_VRD1_PWR_MW_REG);
 			break;
 		case DIMM_VRD2_PWR:
 			ret = i2c_smbus_read_word_swapped(client,
-				DIMM_VRD2_PWR_REG);
+							  DIMM_VRD2_PWR_REG);
 			ret_mw = i2c_smbus_read_word_swapped(client,
-				DIMM_VRD2_PWR_MW_REG);
+							     DIMM_VRD2_PWR_MW_REG);
 			break;
 		case RCA_VRD_PWR:
 			ret = i2c_smbus_read_word_swapped(client,
-				RCA_VRD_PWR_REG);
+							  RCA_VRD_PWR_REG);
 			ret_mw = i2c_smbus_read_word_swapped(client,
-				RCA_VRD_PWR_MW_REG);
+							     RCA_VRD_PWR_MW_REG);
 			break;
 		case SOC_TDP_PWR:
 			ret = i2c_smbus_read_word_swapped(client,
-				SOC_TDP_REG);
+							  SOC_TDP_REG);
 			break;
 		case CPU_VRD_PWR:
 			ret = i2c_smbus_read_word_swapped(client,
-				CORE_VRD_PWR_REG);
+							  CORE_VRD_PWR_REG);
 			ret_mw = i2c_smbus_read_word_swapped(client,
-				CORE_VRD_PWR_MW_REG);
+							     CORE_VRD_PWR_MW_REG);
 			ret2 = i2c_smbus_read_word_swapped(client,
-				SOC_VRD_PWR_REG);
+							   SOC_VRD_PWR_REG);
 			ret2_mw = i2c_smbus_read_word_swapped(client,
-				SOC_VRD_PWR_MW_REG);
+							      SOC_VRD_PWR_MW_REG);
 			break;
 		case DIMM_VRD_PWR:
 			ret = i2c_smbus_read_word_swapped(client,
-				DIMM_VRD1_PWR_REG);
+							  DIMM_VRD1_PWR_REG);
 			ret_mw = i2c_smbus_read_word_swapped(client,
-				DIMM_VRD1_PWR_MW_REG);
+							     DIMM_VRD1_PWR_MW_REG);
 			ret2 = i2c_smbus_read_word_swapped(client,
-				DIMM_VRD2_PWR_REG);
+							   DIMM_VRD2_PWR_REG);
 			ret2_mw = i2c_smbus_read_word_swapped(client,
-				DIMM_VRD2_PWR_MW_REG);
+							      DIMM_VRD2_PWR_MW_REG);
 			break;
 		default:
 			return -EOPNOTSUPP;
@@ -792,8 +792,8 @@ static int smpro_read_power(struct device *dev, u32 attr, int channel,
 	}
 }
 
-static int smpro_read_gpi(struct device *dev,
-				struct device_attribute *da, char *buf)
+static ssize_t smpro_read_generic(struct device *dev,
+			  struct device_attribute *da, char *buf)
 {
 	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
 	struct smpro_data *data = dev_get_drvdata(dev);
@@ -809,7 +809,7 @@ static int smpro_read_gpi(struct device *dev,
 }
 
 static int smpro_read(struct device *dev, enum hwmon_sensor_types type,
-				u32 attr, int channel, long *val)
+		      u32 attr, int channel, long *val)
 {
 	switch (type) {
 	case hwmon_temp:
@@ -825,9 +825,9 @@ static int smpro_read(struct device *dev, enum hwmon_sensor_types type,
 	}
 }
 
-static int smpro_write_gpi(struct device *dev,
-				struct device_attribute *da,
-				const char *buf, size_t count)
+static ssize_t smpro_write_generic(struct device *dev,
+			   struct device_attribute *da,
+			   const char *buf, size_t count)
 {
 	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
 	struct smpro_data *data = dev_get_drvdata(dev);
@@ -845,7 +845,7 @@ static int smpro_write_gpi(struct device *dev,
 }
 
 static int smpro_write(struct device *dev, enum hwmon_sensor_types type,
-				u32 attr, int channel, long val)
+		       u32 attr, int channel, long val)
 {
 	return -EOPNOTSUPP;
 }
@@ -858,7 +858,7 @@ static umode_t smpro_is_visible(const void *data,
 }
 
 static ssize_t show_label(struct device *dev, struct device_attribute *devattr,
-				char *buf)
+			  char *buf)
 {
 	int index = to_sensor_dev_attr(devattr)->index;
 
@@ -991,13 +991,13 @@ static SENSOR_DEVICE_ATTR(power7_label, 0444, show_label, NULL, 17);
 static SENSOR_DEVICE_ATTR(power8_label, 0444, show_label, NULL, 18);
 
 static SENSOR_DEVICE_ATTR(gpi_boot_stage_select, 0644,
-	smpro_read_gpi, smpro_write_gpi, GPI_BOOT_STAGE_SELECT_REG);
+	smpro_read_generic, smpro_write_generic, BOOT_STAGE_SELECT_REG);
 static SENSOR_DEVICE_ATTR(gpi_boot_stage_status_lo, 0444,
-	smpro_read_gpi, NULL, GPI_BOOT_STAGE_STATUS_LO_REG);
+	smpro_read_generic, NULL, BOOT_STAGE_STATUS_LO_REG);
 static SENSOR_DEVICE_ATTR(gpi_boot_stage_cur_stage, 0444,
-	smpro_read_gpi, NULL, GPI_BOOT_STAGE_CUR_STAGE_REG);
+	smpro_read_generic, NULL, BOOT_STAGE_CUR_STAGE_REG);
 static SENSOR_DEVICE_ATTR(acpi_power_limit, 0644,
-	smpro_read_gpi, smpro_write_gpi, GPI_ACPI_POWER_LIMIT_REG);
+	smpro_read_generic, smpro_write_generic, ACPI_POWER_LIMIT_REG);
 
 static SENSOR_DEVICE_ATTR(curr1_label, 0444, show_label, NULL, 5);
 static SENSOR_DEVICE_ATTR(curr2_label, 0444, show_label, NULL, 1);
@@ -1005,25 +1005,25 @@ static SENSOR_DEVICE_ATTR(curr3_label, 0444, show_label, NULL, 3);
 static SENSOR_DEVICE_ATTR(curr4_label, 0444, show_label, NULL, 4);
 static SENSOR_DEVICE_ATTR(curr5_label, 0444, show_label, NULL, 17);
 
-static SENSOR_DEVICE_ATTR(errors_core_ce, 0444, smpro_ras_48bytes_read, NULL,
+static SENSOR_DEVICE_ATTR(errors_core_ce, 0444, smpro_error_data_read, NULL,
 			CORE_CE_ERRS);
-static SENSOR_DEVICE_ATTR(errors_core_ue, 0444, smpro_ras_48bytes_read, NULL,
+static SENSOR_DEVICE_ATTR(errors_core_ue, 0444, smpro_error_data_read, NULL,
 			CORE_UE_ERRS);
-static SENSOR_DEVICE_ATTR(errors_mem_ce, 0444, smpro_ras_48bytes_read, NULL,
+static SENSOR_DEVICE_ATTR(errors_mem_ce, 0444, smpro_error_data_read, NULL,
 			MEM_CE_ERRS);
-static SENSOR_DEVICE_ATTR(errors_mem_ue, 0444, smpro_ras_48bytes_read, NULL,
+static SENSOR_DEVICE_ATTR(errors_mem_ue, 0444, smpro_error_data_read, NULL,
 			MEM_UE_ERRS);
-static SENSOR_DEVICE_ATTR(errors_pcie_ce, 0444, smpro_ras_48bytes_read, NULL,
+static SENSOR_DEVICE_ATTR(errors_pcie_ce, 0444, smpro_error_data_read, NULL,
 			PCIE_CE_ERRS);
-static SENSOR_DEVICE_ATTR(errors_pcie_ue, 0444, smpro_ras_48bytes_read, NULL,
+static SENSOR_DEVICE_ATTR(errors_pcie_ue, 0444, smpro_error_data_read, NULL,
 			PCIE_UE_ERRS);
-static SENSOR_DEVICE_ATTR(errors_other_ce, 0444, smpro_ras_48bytes_read, NULL,
+static SENSOR_DEVICE_ATTR(errors_other_ce, 0444, smpro_error_data_read, NULL,
 			OTHER_CE_ERRS);
-static SENSOR_DEVICE_ATTR(errors_other_ue, 0444, smpro_ras_48bytes_read, NULL,
+static SENSOR_DEVICE_ATTR(errors_other_ue, 0444, smpro_error_data_read, NULL,
 			OTHER_UE_ERRS);
-static SENSOR_DEVICE_ATTR(errors_ras_sm, 0444, smpro_ras_internal_read, NULL,
+static SENSOR_DEVICE_ATTR(errors_smpro, 0444, smpro_err_internal_read, NULL,
 			RAS_SMPRO_ERRS);
-static SENSOR_DEVICE_ATTR(errors_ras_pm, 0444, smpro_ras_internal_read, NULL,
+static SENSOR_DEVICE_ATTR(errors_pmpro, 0444, smpro_err_internal_read, NULL,
 			RAS_PMPRO_ERRS);
 
 static struct attribute *smpro_attrs[] = {
@@ -1039,8 +1039,8 @@ static struct attribute *smpro_attrs[] = {
 	&sensor_dev_attr_errors_pcie_ue.dev_attr.attr,
 	&sensor_dev_attr_errors_other_ce.dev_attr.attr,
 	&sensor_dev_attr_errors_other_ue.dev_attr.attr,
-	&sensor_dev_attr_errors_ras_sm.dev_attr.attr,
-	&sensor_dev_attr_errors_ras_pm.dev_attr.attr,
+	&sensor_dev_attr_errors_smpro.dev_attr.attr,
+	&sensor_dev_attr_errors_pmpro.dev_attr.attr,
 
 	&sensor_dev_attr_temp1_label.dev_attr.attr,
 	&sensor_dev_attr_temp2_label.dev_attr.attr,
@@ -1087,7 +1087,7 @@ static struct attribute *smpro_attrs[] = {
 ATTRIBUTE_GROUPS(smpro);
 
 static int smpro_i2c_probe(struct i2c_client *client,
-				const struct i2c_device_id *id)
+			   const struct i2c_device_id *id)
 {
 	struct i2c_adapter *adapter = client->adapter;
 	struct device *dev = &client->dev;
@@ -1108,9 +1108,9 @@ static int smpro_i2c_probe(struct i2c_client *client,
 	smpro_init_device(client, data);
 
 	hwmon_dev = devm_hwmon_device_register_with_info(dev, client->name,
-							data,
-							&smpro_chip_info,
-							smpro_groups);
+							 data,
+							 &smpro_chip_info,
+							 smpro_groups);
 	return PTR_ERR_OR_ZERO(hwmon_dev);
 }
 
@@ -1140,5 +1140,5 @@ module_i2c_driver(smpro_driver);
 MODULE_AUTHOR("Thinh Pham <thinh.pham@amperecomputing.com>");
 MODULE_AUTHOR("Hoang Nguyen <hnguyen@amperecomputing.com>");
 MODULE_AUTHOR("Thu Nguyen <tbnguyen@amperecomputing.com>");
-MODULE_DESCRIPTION("Ampere SMpro driver");
+MODULE_DESCRIPTION("Ampere Altra SMpro driver");
 MODULE_LICENSE("GPL");
