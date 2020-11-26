@@ -437,15 +437,17 @@ static ssize_t smpro_error_data_read(struct device *dev,
 	u8 i = 0;
 	s32 ret;
 
+	*buf = 0;
 	if (channel >= NUM_48BYTES_ERR_TYPE)
-		goto noerror;
+		goto done;
+
 	errInfo = smpro_error_table[channel];
 
 	memset(err_data, 0xff, MAX_READ_BLOCK_LENGTH + 2);
 
 	errCount = i2c_smbus_read_word_swapped(client, errInfo.err_count);
 	if (errCount <= 0)
-		goto noerror;
+		goto done;
 
 	if (errCount > MAX_READ_ERROR)
 		errCount = MAX_READ_ERROR;
@@ -453,15 +455,17 @@ static ssize_t smpro_error_data_read(struct device *dev,
 	for (i = 0; i < errCount; i++) {
 		errLength = i2c_smbus_read_word_swapped(client,
 			errInfo.err_len);
+
 		if (errLength <= 0)
-			goto end;
+			break;
+
 		if (errLength > MAX_READ_BLOCK_LENGTH)
 			errLength = MAX_READ_BLOCK_LENGTH;
 
 		ret = read_i2c_block_data(client, errInfo.err_data,
 			errLength, err_data);
 		if (ret < 0)
-			goto end;
+			break;
 
 		snprintf(msg, MAX_MSG_LEN, "%s", "");
 		format_error_output(err_data, MAX_READ_BLOCK_LENGTH + 2,
@@ -472,14 +476,12 @@ static ssize_t smpro_error_data_read(struct device *dev,
 		ret = i2c_smbus_write_word_swapped(client,
 			errInfo.err_count, 0x100);
 		if (ret < 0)
-			goto end;
+			break;
 
 		/* add error message to buffer */
 		strncat(buf, msg, strlen(msg));
 	}
-noerror:
-	return scnprintf(buf, PAGE_SIZE, "0\n");
-end:
+done:
 	return strlen(buf);
 }
 
