@@ -590,15 +590,6 @@ static ssize_t smpro_err_internal_read(struct device *dev,
 			goto done;
 		strncat(buf, msg, strlen(msg));
 	}
-	/* Error type */
-	if (ret & BIT_1) {
-		ret1 = smpro_err_int_get_info(client, err_info.err_info_low,
-					      err_info.err_info_high,
-					      0xff, 0xff, 2, msg);
-		if (ret1 < 0)
-			goto done;
-		strncat(buf, msg, strlen(msg));
-	}
 	/* Error with data type */
 	if (ret & BIT_2) {
 		ret1 = smpro_err_int_get_info(client,
@@ -606,6 +597,15 @@ static ssize_t smpro_err_internal_read(struct device *dev,
 					      err_info.err_info_high,
 					      err_info.err_data_low,
 					      err_info.err_data_high, 4, msg);
+		if (ret1 < 0)
+			goto done;
+		strncat(buf, msg, strlen(msg));
+	}
+	/* Error type */
+	else if (ret & BIT_1) {
+		ret1 = smpro_err_int_get_info(client, err_info.err_info_low,
+					      err_info.err_info_high,
+					      0xff, 0xff, 2, msg);
 		if (ret1 < 0)
 			goto done;
 		strncat(buf, msg, strlen(msg));
