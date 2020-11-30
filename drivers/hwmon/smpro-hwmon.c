@@ -505,7 +505,7 @@ done:
 	return strlen(buf);
 }
 
-static s32 smpro_err_int_get_info(struct i2c_client *client, u8 addr,
+static s32 smpro_internal_err_get_info(struct i2c_client *client, u8 addr,
 	u8 addr1, u8 addr2, u8 addr3, u8 subtype, char *buf)
 {
 	s32 retHi = 0, retLo = 0, dataLo = 0, dataHi = 0;
@@ -551,7 +551,7 @@ static s32 smpro_err_int_get_info(struct i2c_client *client, u8 addr,
 	return strlen(buf);
 }
 
-static ssize_t smpro_err_internal_read(struct device *dev,
+static ssize_t smpro_internal_err_read(struct device *dev,
 				struct device_attribute *da, char *buf)
 {
 	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
@@ -583,16 +583,17 @@ static ssize_t smpro_err_internal_read(struct device *dev,
 
 	/* Warning type */
 	if (ret & BIT_0) {
-		ret1 = smpro_err_int_get_info(client, err_info.warn_info_low,
-					      err_info.warn_info_high,
-					      0xff, 0xff, 1, msg);
+		ret1 = smpro_internal_err_get_info(client,
+						err_info.warn_info_low,
+						err_info.warn_info_high,
+						0xff, 0xff, 1, msg);
 		if (ret1 < 0)
 			goto done;
 		strncat(buf, msg, strlen(msg));
 	}
 	/* Error with data type */
 	if (ret & BIT_2) {
-		ret1 = smpro_err_int_get_info(client,
+		ret1 = smpro_internal_err_get_info(client,
 					      err_info.err_info_low,
 					      err_info.err_info_high,
 					      err_info.err_data_low,
@@ -603,9 +604,10 @@ static ssize_t smpro_err_internal_read(struct device *dev,
 	}
 	/* Error type */
 	else if (ret & BIT_1) {
-		ret1 = smpro_err_int_get_info(client, err_info.err_info_low,
-					      err_info.err_info_high,
-					      0xff, 0xff, 2, msg);
+		ret1 = smpro_internal_err_get_info(client,
+						err_info.err_info_low,
+						err_info.err_info_high,
+						0xff, 0xff, 2, msg);
 		if (ret1 < 0)
 			goto done;
 		strncat(buf, msg, strlen(msg));
@@ -694,7 +696,7 @@ static int smpro_read_temp(struct device *dev, u32 attr, int channel,
 	return 0;
 }
 
-static int smpro_read_in(struct device *dev, u32 attr, int channel,
+static int smpro_read_volt(struct device *dev, u32 attr, int channel,
 			 long *val)
 {
 	struct smpro_data *data = dev_get_drvdata(dev);
@@ -816,22 +818,6 @@ static int smpro_read_power(struct device *dev, u32 attr, int channel,
 	}
 }
 
-static ssize_t smpro_read_generic(struct device *dev,
-			  struct device_attribute *da, char *buf)
-{
-	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
-	struct smpro_data *data = dev_get_drvdata(dev);
-	struct i2c_client *client = data->client;
-	s32 ret;
-
-	ret = i2c_smbus_read_word_swapped(client, attr->index);
-
-	if (ret < 0)
-		return ret;
-
-	return snprintf(buf, PAGE_SIZE, "%d\n", ret);
-}
-
 static int smpro_read(struct device *dev, enum hwmon_sensor_types type,
 		      u32 attr, int channel, long *val)
 {
@@ -839,7 +825,7 @@ static int smpro_read(struct device *dev, enum hwmon_sensor_types type,
 	case hwmon_temp:
 		return smpro_read_temp(dev, attr, channel, val);
 	case hwmon_in:
-		return smpro_read_in(dev, attr, channel, val);
+		return smpro_read_volt(dev, attr, channel, val);
 	case hwmon_power:
 		return smpro_read_power(dev, attr, channel, val);
 	case hwmon_curr:
@@ -847,25 +833,6 @@ static int smpro_read(struct device *dev, enum hwmon_sensor_types type,
 	default:
 		return -EOPNOTSUPP;
 	}
-}
-
-static ssize_t smpro_write_generic(struct device *dev,
-			   struct device_attribute *da,
-			   const char *buf, size_t count)
-{
-	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
-	struct smpro_data *data = dev_get_drvdata(dev);
-	struct i2c_client *client = data->client;
-	unsigned long val;
-	s32 ret;
-
-	ret = kstrtoul(buf, 16, &val);
-
-	ret = i2c_smbus_write_word_swapped(client, attr->index, val);
-	if (ret < 0)
-		return -EPROTO;
-
-	return count;
 }
 
 static int smpro_write(struct device *dev, enum hwmon_sensor_types type,
@@ -1017,7 +984,6 @@ static SENSOR_DEVICE_ATTR(power8_label, 0444, show_label, NULL, 18);
 static ssize_t smpro_read_boot_progress(struct device *dev,
 		struct device_attribute *da, char *buf)
 {
-	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
 	struct smpro_data *data = dev_get_drvdata(dev);
 	struct i2c_client *client = data->client;
 	int counter = 10;
@@ -1113,9 +1079,9 @@ static SENSOR_DEVICE_ATTR(errors_other_ce, 0444, smpro_error_data_read, NULL,
 			OTHER_CE_ERRS);
 static SENSOR_DEVICE_ATTR(errors_other_ue, 0444, smpro_error_data_read, NULL,
 			OTHER_UE_ERRS);
-static SENSOR_DEVICE_ATTR(errors_smpro, 0444, smpro_err_internal_read, NULL,
+static SENSOR_DEVICE_ATTR(errors_smpro, 0444, smpro_internal_err_read, NULL,
 			RAS_SMPRO_ERRS);
-static SENSOR_DEVICE_ATTR(errors_pmpro, 0444, smpro_err_internal_read, NULL,
+static SENSOR_DEVICE_ATTR(errors_pmpro, 0444, smpro_internal_err_read, NULL,
 			RAS_PMPRO_ERRS);
 
 static struct attribute *smpro_attrs[] = {
