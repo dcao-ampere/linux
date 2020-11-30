@@ -818,6 +818,22 @@ static int smpro_read_power(struct device *dev, u32 attr, int channel,
 	}
 }
 
+static ssize_t smpro_read_register(struct device *dev,
+			  struct device_attribute *da, char *buf)
+{
+	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+	struct smpro_data *data = dev_get_drvdata(dev);
+	struct i2c_client *client = data->client;
+	s32 ret;
+
+	ret = i2c_smbus_read_word_swapped(client, attr->index);
+
+	if (ret < 0)
+		return ret;
+
+	return snprintf(buf, PAGE_SIZE, "%d\n", ret);
+}
+
 static int smpro_read(struct device *dev, enum hwmon_sensor_types type,
 		      u32 attr, int channel, long *val)
 {
@@ -833,6 +849,25 @@ static int smpro_read(struct device *dev, enum hwmon_sensor_types type,
 	default:
 		return -EOPNOTSUPP;
 	}
+}
+
+static ssize_t smpro_write_register(struct device *dev,
+			   struct device_attribute *da,
+			   const char *buf, size_t count)
+{
+	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+	struct smpro_data *data = dev_get_drvdata(dev);
+	struct i2c_client *client = data->client;
+	unsigned long val;
+	s32 ret;
+
+	ret = kstrtoul(buf, 16, &val);
+
+	ret = i2c_smbus_write_word_swapped(client, attr->index, val);
+	if (ret < 0)
+		return -EPROTO;
+
+	return count;
 }
 
 static int smpro_write(struct device *dev, enum hwmon_sensor_types type,
@@ -1083,6 +1118,8 @@ static SENSOR_DEVICE_ATTR(errors_smpro, 0444, smpro_internal_err_read, NULL,
 			RAS_SMPRO_ERRS);
 static SENSOR_DEVICE_ATTR(errors_pmpro, 0444, smpro_internal_err_read, NULL,
 			RAS_PMPRO_ERRS);
+static SENSOR_DEVICE_ATTR(acpi_power_limit, 0644, smpro_read_register,
+			smpro_write_register, ACPI_POWER_LIMIT_REG);
 
 static struct attribute *smpro_attrs[] = {
 	&sensor_dev_attr_boot_progress.dev_attr.attr,
@@ -1096,6 +1133,7 @@ static struct attribute *smpro_attrs[] = {
 	&sensor_dev_attr_errors_other_ue.dev_attr.attr,
 	&sensor_dev_attr_errors_smpro.dev_attr.attr,
 	&sensor_dev_attr_errors_pmpro.dev_attr.attr,
+	&sensor_dev_attr_acpi_power_limit.dev_attr.attr,
 
 	&sensor_dev_attr_temp1_label.dev_attr.attr,
 	&sensor_dev_attr_temp2_label.dev_attr.attr,
