@@ -236,6 +236,8 @@ source "drivers/counter/Kconfig"
 
 source "drivers/most/Kconfig"
 
+source "drivers/jtag/Kconfig"
+
 source "drivers/peci/Kconfig"
 
 endmenu
