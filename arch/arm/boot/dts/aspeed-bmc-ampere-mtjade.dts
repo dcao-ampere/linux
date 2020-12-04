@@ -453,6 +453,11 @@
 	status = "okay";
 };
 
+&jtag {
+	status = "okay";
+	compatible = "aspeed,ast2500-jtag";
+};
+
 &gfx {
 	status = "okay";
 	memory-region = <&gfx_memory>;
