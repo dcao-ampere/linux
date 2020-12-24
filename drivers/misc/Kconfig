@@ -197,6 +197,13 @@ config SGI_XP
 	  this feature will allow for direct communication between SSIs
 	  based on a network adapter and DMA messaging.
 
+config SMPRO_ERRMON
+	tristate "Ampere Computing SMPro error monitor driver"
+	depends on MFD_SMPRO || COMPILE_TEST
+	help
+	  If you say yes here you get support for error monitor function
+	  provides by Ampere Computing's SoC with SMpro processor.
+
 config SMPRO_MISC
 	tristate "Ampere Computing SMPro miscellaneous driver"
 	depends on MFD_SMPRO || COMPILE_TEST
