@@ -407,6 +407,26 @@
 
 &i2c2 {
 	status = "okay";
+	smpro@4f {
+		compatible = "ampere,smpro";
+		reg = <0x4f>;
+		hwmon {
+			compatible = "ampere,ac01-hwmon";
+		};
+		misc {
+			compatible = "ampere,ac01-misc";
+		};
+	};
+	smpro@4e {
+		compatible = "ampere,smpro";
+		reg = <0x4e>;
+		hwmon {
+			compatible = "ampere,ac01-hwmon";
+		};
+		misc {
+			compatible = "ampere,ac01-misc";
+		};
+	};
 };
 
 &i2c3 {
