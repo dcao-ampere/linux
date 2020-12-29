@@ -416,6 +416,9 @@
 		misc {
 			compatible = "ampere,ac01-misc";
 		};
+		errmon {
+			compatible = "ampere,ac01-errmon";
+		};
 	};
 	smpro@4e {
 		compatible = "ampere,smpro";
@@ -425,6 +428,9 @@
 		};
 		misc {
 			compatible = "ampere,ac01-misc";
+		};
+		errmon {
+			compatible = "ampere,ac01-errmon";
 		};
 	};
 };
