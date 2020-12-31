@@ -344,7 +344,13 @@
 };
 
 &mac0 {
-	status = "disabled";
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_rmii1_default>;
+	clocks = <&syscon ASPEED_CLK_GATE_MAC1CLK>,
+		 <&syscon ASPEED_CLK_MAC1RCLK>;
+	clock-names = "MACCLK", "RCLK";
+	use-ncsi;
 };
 
 &mac1 {
@@ -568,7 +574,7 @@
 	/*O0-O7*/	"","","","","","","","",
 	/*P0-P7*/	"","","","","","","","",
 	/*Q0-Q7*/	"","","","","","","","",
-	/*R0-R7*/	"","","","","","","","",
+	/*R0-R7*/	"","","","OCP_AUX_PWREN","OCP_MAIN_PWREN","","","",
 	/*S0-S7*/	"","","","","","","","",
 	/*T0-T7*/	"","","","","","","","",
 	/*U0-U7*/	"","","","","","","","",
