@@ -159,7 +159,7 @@ static int smpro_read_temp(struct device *dev, u32 attr, int channel,
 				long *val)
 {
 	struct smpro_hwmon *hwmon = dev_get_drvdata(dev);
-	s32 highest_temp = -1;
+	unsigned int t_max = 0xFFFFFFFF;
 	unsigned int value;
 	s32 i = 0;
 	int ret = -1;
@@ -172,12 +172,19 @@ static int smpro_read_temp(struct device *dev, u32 attr, int channel,
 						temp_regs[channel + i], &value);
 				if (ret)
 					return ret;
-				if (value > highest_temp)
-					highest_temp = value;
+
+				if (value == 0xFFFF)
+					continue;
+
+				value &= 0x1ff;
+				if (t_max != 0xFFFFFFFF)
+					t_max = (value > t_max) ? value : t_max;
+				else
+					t_max = value;
 			}
-			if (highest_temp <= 0)
+			if (t_max == 0xFFFFFFFF)
 				return -1;
-			*val = (highest_temp & 0x1ff) * 1000;
+			*val = (t_max & 0x1ff) * 1000;
 		} else {
 			ret = regmap_read(hwmon->regmap,
 					temp_regs[channel], &value);
