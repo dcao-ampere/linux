@@ -437,7 +437,7 @@ static void dev_watchdog(struct timer_list *t)
 				}
 			}
 
-			if (some_queue_timedout) {
+			if (some_queue_timedout && 0) {
 				trace_net_dev_xmit_timeout(dev, i);
 				WARN_ONCE(1, KERN_INFO "NETDEV WATCHDOG: %s (%s): transmit queue %u timed out\n",
 				       dev->name, netdev_drivername(dev), i);
