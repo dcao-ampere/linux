@@ -227,6 +227,31 @@ static int errmon_read_block(struct regmap *map, u16 address, u16 length, u8 *da
 	return ret;
 }
 
+static int format_overflow_error_output(unsigned char datas[], size_t data_len,
+			       char *buf, size_t buf_len)
+{
+	unsigned char str[3] = {'\0'};
+	u8 x = 0, y = 0, curPos = 0;
+
+	if (data_len < MAX_READ_BLOCK_LENGTH + 2)
+		return 0;
+	if (buf_len < MAX_MSG_LEN)
+		return 0;
+
+	for (x = 0; x < sizeof(field_size); x++) {
+		for (y = 0; y < field_size[x]; y++) {
+			if (x == 0 || x == 1)
+				snprintf(str, 3, "ff");
+			else
+				snprintf(str, 3, "00");
+			strncat(buf, str, strlen(str));
+		}
+		strncat(buf, " ", strlen(" "));
+		curPos = curPos + field_size[x];
+	}
+	return 1;
+}
+
 static int format_error_output(unsigned char datas[], size_t data_len,
 			       char *buf, size_t buf_len)
 {
@@ -272,6 +297,18 @@ static ssize_t smpro_error_data_read(struct device *dev,
 	ret = regmap_read(errmon->regmap, err_info.err_count, &err_count);
 	if (ret || err_count <= 0)
 		goto done;
+
+	/* Bit 8 indentifies the overflow status of one error type */
+	if (err_count & 0x100) {
+		snprintf(msg, MAX_MSG_LEN, "%s", "");
+		format_overflow_error_output(err_data,
+			MAX_READ_BLOCK_LENGTH + 2, msg, MAX_MSG_LEN);
+		strcat(msg, "\n");
+		strncat(buf, msg, strlen(msg));
+	}
+
+	/* Error count is the low byte */
+	err_count = err_count & 0xff;
 
 	if (err_count > MAX_READ_ERROR)
 		err_count = MAX_READ_ERROR;
