@@ -32,8 +32,8 @@
 #define BOOT_STAGE_CUR_STAGE_REG	0xB2
 #define BOOT_STAGE_STATUS_HI_REG	0xB3
 
-/* ACPI State Registers */
-#define ACPI_POWER_LIMIT_REG	0xE5
+/* SOC State Registers */
+#define SOC_POWER_LIMIT_REG	0xE5
 
 /* Boot stages */
 enum {
@@ -135,21 +135,21 @@ done:
 
 static DEVICE_ATTR_RO(boot_progress);
 
-static int acpi_power_limit_show(struct device *dev,
+static int soc_power_limit_show(struct device *dev,
 				struct device_attribute *da, char *buf)
 {
 	struct smpro_misc *misc = dev_get_drvdata(dev);
 	int ret;
 	unsigned int value;
 
-	ret = regmap_read(misc->regmap, ACPI_POWER_LIMIT_REG, &value);
+	ret = regmap_read(misc->regmap, SOC_POWER_LIMIT_REG, &value);
 	if (ret)
 		return ret;
 
 	return snprintf(buf, PAGE_SIZE, "%d\n", value);
 }
 
-static int acpi_power_limit_store(struct device *dev,
+static int soc_power_limit_store(struct device *dev,
 				struct device_attribute *da,
 				const char *buf, size_t count)
 {
@@ -159,7 +159,7 @@ static int acpi_power_limit_store(struct device *dev,
 
 	ret = kstrtoul(buf, 16, &val);
 
-	ret = regmap_write(misc->regmap, ACPI_POWER_LIMIT_REG,
+	ret = regmap_write(misc->regmap, SOC_POWER_LIMIT_REG,
 			(unsigned int)val);
 	if (ret)
 		return -EPROTO;
@@ -167,11 +167,11 @@ static int acpi_power_limit_store(struct device *dev,
 	return count;
 }
 
-static DEVICE_ATTR_RW(acpi_power_limit);
+static DEVICE_ATTR_RW(soc_power_limit);
 
 static struct attribute *smpro_misc_attrs[] = {
 	&dev_attr_boot_progress.attr,
-	&dev_attr_acpi_power_limit.attr,
+	&dev_attr_soc_power_limit.attr,
 	NULL
 };
 
