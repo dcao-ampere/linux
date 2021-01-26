@@ -33,33 +33,68 @@
 /*
  * Call in WRITE context
  */
-static int send_ssif_bmc_response(struct ssif_bmc_ctx *ssif_bmc)
+static int send_ssif_bmc_response(struct ssif_bmc_ctx *ssif_bmc, bool non_blocking)
 {
-	int response_in_progress;
 	unsigned long flags;
+	int ret;
 
-	spin_lock_irqsave(&ssif_bmc->lock, flags);
-	response_in_progress = ssif_bmc->response_in_progress;
-	if (!response_in_progress) {
-		ssif_bmc->response_in_progress = true;
-
-		/*
-		 * Check the response data length from userspace to determine the type
-		 * of the response message whether it is single-part or multi-part.
-		 */
-		if (ssif_msg_len(&ssif_bmc->response) >
-				(MAX_PAYLOAD_PER_TRANSACTION + 1)) { /* 1: byte of length */
-			ssif_bmc->is_multi_part_read = true;
-		} else {
-			ssif_bmc->is_multi_part_read = false;
-		}
-
+	if (!non_blocking) {
+retry:
+		ret = wait_event_interruptible(ssif_bmc->wait_queue,
+				!ssif_bmc->response_in_progress);
+		if (ret)
+			return ret;
 	}
 
+	spin_lock_irqsave(&ssif_bmc->lock, flags);
+	if (ssif_bmc->response_in_progress) {
+		spin_unlock_irqrestore(&ssif_bmc->lock, flags);
+		if (non_blocking)
+			return -EAGAIN;
+
+		goto retry;
+	}
+
+	/*
+	 * Check the response data length from userspace to determine the type
+	 * of the response message whether it is single-part or multi-part.
+	 */
+	ssif_bmc->is_multi_part_read =
+		(ssif_msg_len(&ssif_bmc->response) >
+		 (MAX_PAYLOAD_PER_TRANSACTION + 1)) ? 
+		true : false; /* 1: byte of length */
+
+	ssif_bmc->response_in_progress = true;
 	spin_unlock_irqrestore(&ssif_bmc->lock, flags);
 
-	if (response_in_progress)
-		return -EAGAIN;
+	return 0;
+}
+
+/*
+ * Call in READ context
+ */
+static int receive_ssif_bmc_request(struct ssif_bmc_ctx *ssif_bmc, bool non_blocking)
+{
+	unsigned long flags;
+	int ret;
+
+	if (!non_blocking) {
+retry:
+		ret = wait_event_interruptible(
+				ssif_bmc->wait_queue,
+				ssif_bmc->request_available);
+		if (ret)
+			return ret;
+	}
+
+	spin_lock_irqsave(&ssif_bmc->lock, flags);
+	if (!ssif_bmc->request_available) {
+		spin_unlock_irqrestore(&ssif_bmc->lock, flags);
+		if (non_blocking)
+			return -EAGAIN;
+		goto retry;
+	}
+	spin_unlock_irqrestore(&ssif_bmc->lock, flags);
 
 	return 0;
 }
@@ -73,18 +108,18 @@ static ssize_t ssif_bmc_read(struct file *file, char __user *buf, size_t count,
 	ssize_t ret;
 
 	mutex_lock(&ssif_bmc->file_mutex);
+
+	ret = receive_ssif_bmc_request(ssif_bmc, file->f_flags & O_NONBLOCK);
+	if (ret < 0)
+		goto out;
+
 	spin_lock_irqsave(&ssif_bmc->lock, flags);
-
-	ret = -EAGAIN;
-	if (ssif_bmc->request_available) {
-		count = min_t(ssize_t, count, ssif_msg_len(&ssif_bmc->request));
-		ret = copy_to_user(buf, &ssif_bmc->request, count);
-		if (ret)
-			ret = -EFAULT;
+	count = min_t(ssize_t, count, ssif_msg_len(&ssif_bmc->request));
+	ret = copy_to_user(buf, &ssif_bmc->request, count);
+	if (!ret)
 		ssif_bmc->request_available = false;
-	}
-
 	spin_unlock_irqrestore(&ssif_bmc->lock, flags);
+out:
 	mutex_unlock(&ssif_bmc->file_mutex);
 
 	return (ret < 0) ? ret : count;
@@ -95,24 +130,30 @@ static ssize_t ssif_bmc_write(struct file *file, const char __user *buf, size_t 
 					loff_t *ppos)
 {
 	struct ssif_bmc_ctx *ssif_bmc = to_ssif_bmc(file);
+	unsigned long flags;
 	ssize_t ret;
 
 	if (count > sizeof(struct ssif_msg))
 		return -EINVAL;
 
 	mutex_lock(&ssif_bmc->file_mutex);
+
+	spin_lock_irqsave(&ssif_bmc->lock, flags);
 	ret = copy_from_user(&ssif_bmc->response, buf, count);
 	if ( ret || count < ssif_msg_len(&ssif_bmc->response)) {
+		spin_unlock_irqrestore(&ssif_bmc->lock, flags);
 		ret = -EINVAL;
 		goto out;
 	}
+	spin_unlock_irqrestore(&ssif_bmc->lock, flags);
 
-	ret = send_ssif_bmc_response(ssif_bmc);
+	ret = send_ssif_bmc_response(ssif_bmc, file->f_flags & O_NONBLOCK);
+	if (!ret) {
+		if (ssif_bmc->set_ssif_bmc_status)
+			ssif_bmc->set_ssif_bmc_status(ssif_bmc, SSIF_BMC_READY);
+	}
 out:
 	mutex_unlock(&ssif_bmc->file_mutex);
-
-	if (ssif_bmc->set_ssif_bmc_status)
-		ssif_bmc->set_ssif_bmc_status(ssif_bmc, SSIF_BMC_READY);
 
 	return (ret < 0) ? ret : count;
 }
