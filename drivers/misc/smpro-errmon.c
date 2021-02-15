@@ -79,6 +79,16 @@
 #define OTHER_UE_ERR_LEN_REG	0xD9
 #define OTHER_UE_ERR_DATA_REG	0xDA
 
+/* Event Source Registers */
+#define EVENT_SRC1_REG		0x62
+#define EVENT_SRC2_REG		0x63
+
+/* Event Data Registers */
+#define VRD_WARN_FAULT_EVENT_DATA_REG	0x78
+#define VRD_HOT_EVENT_DATA_REG		0x79
+#define DIMM_HOT_EVENT_DATA_REG		0x7A
+#define DIMM_2X_REFRESH_EVENT_DATA_REG	0x96
+
 /* I2C read block data constant */
 #define MAX_READ_BLOCK_LENGTH	48
 #define NUM_I2C_MESSAGES	2
@@ -173,6 +183,25 @@ struct smpro_int_error_hdr list_smpro_int_error_hdr[2] = {
 
 struct smpro_errmon {
 	struct regmap *regmap;
+};
+
+enum EVENT_TYPES {
+	VRD_WARN_FAULT_EVENTS,
+	VRD_HOT_EVENTS,
+	DIMM_HOT_EVENTS,
+	NUM_EVENTS_TYPE,
+};
+
+struct smpro_event_hdr {
+	u8 event_src;	/* Source register of event type */
+	u8 event_data;	/* Data register of event type */
+};
+
+/* Included Address of event source and data registers */
+struct smpro_event_hdr smpro_event_table[NUM_EVENTS_TYPE] = {
+	{EVENT_SRC1_REG, VRD_WARN_FAULT_EVENT_DATA_REG},
+	{EVENT_SRC1_REG, VRD_HOT_EVENT_DATA_REG},
+	{EVENT_SRC2_REG, DIMM_HOT_EVENT_DATA_REG}
 };
 
 static int read_i2c_block_data(struct i2c_client *client,
@@ -273,6 +302,31 @@ static int format_error_output(unsigned char datas[], size_t data_len,
 		curPos = curPos + field_size[x];
 	}
 	return 1;
+}
+
+static ssize_t smpro_event_data_read(struct device *dev,
+				     struct device_attribute *da, char *buf,
+				     int channel)
+{
+	struct smpro_errmon *errmon = dev_get_drvdata(dev);
+	unsigned char msg[MAX_MSG_LEN] = {'\0'};
+	struct smpro_event_hdr event_info;
+	s32 event_data = 0;
+	int ret;
+
+	*buf = 0;
+	if (channel >= NUM_EVENTS_TYPE)
+		goto done;
+
+	event_info = smpro_event_table[channel];
+	ret = regmap_read(errmon->regmap, event_info.event_data, &event_data);
+	if (ret)
+		goto done;
+
+	snprintf(msg, MAX_MSG_LEN, "%02x %04x\n", channel, event_data);
+	strncat(buf, msg, strlen(msg));
+done:
+	return strlen(buf);
 }
 
 static ssize_t smpro_error_data_read(struct device *dev,
@@ -534,6 +588,27 @@ static int errors_pmpro_show(struct device *dev,
 }
 static DEVICE_ATTR_RO(errors_pmpro);
 
+static int event_vrd_warn_fault_show(struct device *dev,
+		struct device_attribute *da, char *buf)
+{
+	return smpro_event_data_read(dev, da, buf, VRD_WARN_FAULT_EVENTS);
+}
+static DEVICE_ATTR_RO(event_vrd_warn_fault);
+
+static int event_vrd_hot_show(struct device *dev,
+		struct device_attribute *da, char *buf)
+{
+	return smpro_event_data_read(dev, da, buf, VRD_HOT_EVENTS);
+}
+static DEVICE_ATTR_RO(event_vrd_hot);
+
+static int event_dimm_hot_show(struct device *dev,
+		struct device_attribute *da, char *buf)
+{
+	return smpro_event_data_read(dev, da, buf, DIMM_HOT_EVENTS);
+}
+static DEVICE_ATTR_RO(event_dimm_hot);
+
 static struct attribute *smpro_errmon_attrs[] = {
 	&dev_attr_errors_core_ce.attr,
 	&dev_attr_errors_core_ue.attr,
@@ -545,6 +620,9 @@ static struct attribute *smpro_errmon_attrs[] = {
 	&dev_attr_errors_other_ue.attr,
 	&dev_attr_errors_smpro.attr,
 	&dev_attr_errors_pmpro.attr,
+	&dev_attr_event_vrd_warn_fault.attr,
+	&dev_attr_event_vrd_hot.attr,
+	&dev_attr_event_dimm_hot.attr,
 	NULL
 };
 
