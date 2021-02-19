@@ -50,11 +50,11 @@
 #define RCA_VRD_TEMP_REG                0x1C
 
 #define CORE_VRD_PWR_REG                0x20
-#define SOC_VRD_PWR_REG                 0x21
+#define SOC_PWR_REG                 0x21
 #define DIMM_VRD1_PWR_REG               0x22
 #define DIMM_VRD2_PWR_REG               0x23
 #define CORE_VRD_PWR_MW_REG             0x26
-#define SOC_VRD_PWR_MW_REG              0x27
+#define SOC_PWR_MW_REG              0x27
 #define DIMM_VRD1_PWR_MW_REG            0x28
 #define DIMM_VRD2_PWR_MW_REG            0x29
 #define RCA_VRD_PWR_REG                 0x2A
@@ -122,8 +122,8 @@ static const u8 curr_regs[] = {
 };
 
 enum pwr_regs {
-	PMD_VRD_PWR,
-	SOC_VRD_PWR,
+	CORE_VRD_PWR,
+	SOC_PWR,
 	DIMM_VRD1_PWR,
 	DIMM_VRD2_PWR,
 	CPU_VRD_PWR,
@@ -137,7 +137,7 @@ static const char * const label[] = {
 	"DIMM VRD",
 	"DIMM VRD1",
 	"DIMM VRD2",
-	"PMD VRD",
+	"CORE VRD",
 	"CH0 DIMM",
 	"CH1 DIMM",
 	"CH2 DIMM",
@@ -248,7 +248,7 @@ static int smpro_read_power(struct device *dev, u32 attr, int channel,
 	switch (attr) {
 	case hwmon_power_input:
 		switch (channel) {
-		case PMD_VRD_PWR:
+		case CORE_VRD_PWR:
 			if (!ret)
 				ret = regmap_read(hwmon->regmap,
 						CORE_VRD_PWR_REG, &val);
@@ -258,13 +258,13 @@ static int smpro_read_power(struct device *dev, u32 attr, int channel,
 			if (ret)
 				return ret;
 			break;
-		case SOC_VRD_PWR:
+		case SOC_PWR:
 			if (!ret)
 				ret = regmap_read(hwmon->regmap,
-						SOC_VRD_PWR_REG, &val);
+						SOC_PWR_REG, &val);
 			if (!ret)
 				ret = regmap_read(hwmon->regmap,
-						SOC_VRD_PWR_MW_REG, &val_mw);
+						SOC_PWR_MW_REG, &val_mw);
 			if (ret)
 				return ret;
 			break;
@@ -314,10 +314,10 @@ static int smpro_read_power(struct device *dev, u32 attr, int channel,
 						CORE_VRD_PWR_MW_REG, &val_mw);
 			if (!ret)
 				ret = regmap_read(hwmon->regmap,
-						SOC_VRD_PWR_REG, &val2);
+						SOC_PWR_REG, &val2);
 			if (!ret)
 				ret = regmap_read(hwmon->regmap,
-						SOC_VRD_PWR_MW_REG, &val2_mw);
+						SOC_PWR_MW_REG, &val2_mw);
 			if (ret)
 				return ret;
 			break;
@@ -508,7 +508,7 @@ static SENSOR_DEVICE_ATTR(in4_label, 0444, show_label, NULL, 2);
 static SENSOR_DEVICE_ATTR(in5_label, 0444, show_label, NULL, 17);
 
 static SENSOR_DEVICE_ATTR(power1_label, 0444, show_label, NULL, 5);
-static SENSOR_DEVICE_ATTR(power2_label, 0444, show_label, NULL, 1);
+static SENSOR_DEVICE_ATTR(power2_label, 0444, show_label, NULL, 0);
 static SENSOR_DEVICE_ATTR(power3_label, 0444, show_label, NULL, 3);
 static SENSOR_DEVICE_ATTR(power4_label, 0444, show_label, NULL, 4);
 static SENSOR_DEVICE_ATTR(power5_label, 0444, show_label, NULL, 16);
