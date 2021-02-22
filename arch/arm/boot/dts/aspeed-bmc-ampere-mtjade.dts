@@ -121,6 +121,18 @@
 			linux,code = <ASPEED_GPIO(Q, 5)>;
 		};
 
+                psu1 {
+                        label = "psu1_b25";
+                        gpios = <&gpio ASPEED_GPIO(H, 4) GPIO_ACTIVE_LOW>;
+                        linux,code = <ASPEED_GPIO(H, 4)>;
+                };
+
+                psu2 {
+                        label = "psu2_b25";
+                        gpios = <&gpio ASPEED_GPIO(H, 5) GPIO_ACTIVE_LOW>;
+                        linux,code = <ASPEED_GPIO(H, 5)>;
+                };
+
 	};
 
 	gpioA0mux: mux-controller {
@@ -512,6 +524,19 @@
 
 &i2c9 {
 	status = "okay";
+};
+
+&i2c10 {
+        status = "okay";
+        adm1278@10 {
+                  compatible = "adi,adm1278";
+                  reg = <0x10>;
+        };
+
+        adm1278@11 {
+                  compatible = "adi,adm1278";
+                  reg = <0x11>;
+        };
 };
 
 &jtag {
