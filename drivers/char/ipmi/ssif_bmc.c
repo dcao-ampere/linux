@@ -402,6 +402,68 @@ static void event_process_read(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
 	}
 }
 
+static void event_received_write(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
+{
+	u8 *buf;
+	u8 index;
+	u8 smbus_cmd;
+
+	buf = (u8 *) &ssif_bmc->request;
+	if (ssif_bmc->msg_idx >= sizeof(struct ssif_msg))
+		return;
+
+	smbus_cmd = ssif_bmc->smbus_cmd;
+	switch (smbus_cmd) {
+	case SSIF_IPMI_REQUEST:
+		/* Single-part write */
+		buf[ssif_bmc->msg_idx - 1] = *val;
+		ssif_bmc->msg_idx++;
+		if ((ssif_bmc->msg_idx - 1) >= ssif_msg_len(&ssif_bmc->request))
+			handle_request(ssif_bmc);
+		break;
+	case SSIF_IPMI_MULTI_PART_REQUEST_START:
+	case SSIF_IPMI_MULTI_PART_REQUEST_MIDDLE:
+	case SSIF_IPMI_MULTI_PART_REQUEST_END:
+		/* Multi-part write */
+		if (ssif_bmc->msg_idx == 1) {
+			/* 2nd byte received is length */
+			if (smbus_cmd == SSIF_IPMI_MULTI_PART_REQUEST_START) {
+				/* Reset length to zero */
+				ssif_bmc->request.len = 0;
+			}
+			ssif_bmc->request.len += *val;
+			ssif_bmc->recv_data_len = *val;
+			ssif_bmc->msg_idx++;
+			/* As SMBus specification does not allow the length
+			 * (byte count) in the Write-Block protocol to be zero.
+			 * Therefore, it is illegal to have the last Middle
+			 * transaction in the sequence carry 32-bytes and have
+			 * a length of ‘0’ in the End transaction.
+			 * But some users may try to use this way and we should
+			 * prevent ssif_bmc driver broken in this case.
+			 */
+			if ((*val == 0) &&
+			    (smbus_cmd == SSIF_IPMI_MULTI_PART_REQUEST_END))
+				handle_request(ssif_bmc);
+			break;
+		}
+		index = ssif_bmc->request.len - ssif_bmc->recv_data_len;
+		buf[ssif_bmc->msg_idx - 1 + index] = *val;
+		ssif_bmc->msg_idx++;
+		if (smbus_cmd == SSIF_IPMI_MULTI_PART_REQUEST_END) {
+			if ((ssif_bmc->msg_idx - 1 + index) >=
+			    ssif_msg_len(&ssif_bmc->request))
+				handle_request(ssif_bmc);
+		}
+		break;
+	default:
+		/* Do not expect to go to this case */
+		pr_err("Error: Unexpected SMBus command received 0x%x\n",
+				ssif_bmc->smbus_cmd);
+		break;
+	}
+}
+
 /*
  * Callback function to handle I2C slave events
  */
@@ -441,21 +503,12 @@ static int ssif_bmc_cb(struct i2c_client *client,
 		 *  buffer byte.
 		 */
 		if (ssif_bmc->msg_idx == 0) {
-			/* SMBUS read command can vary (single or multi-part) */
+			/* SMBUS command can vary (single or multi-part) */
 			ssif_bmc->smbus_cmd = *val;
 			ssif_bmc->msg_idx++;
 		} else {
-			buf = (u8 *) &ssif_bmc->request;
-			if (ssif_bmc->msg_idx >= sizeof(struct ssif_msg))
-				break;
-
-			/* Write byte-to-byte to buffer */
-			buf[ssif_bmc->msg_idx - 1] = *val;
-			ssif_bmc->msg_idx++;
-			if ((ssif_bmc->msg_idx - 1) >= ssif_msg_len(&ssif_bmc->request))
-				handle_request(ssif_bmc);
+			event_received_write(ssif_bmc, val);
 		}
-
 		break;
 
 	case I2C_SLAVE_STOP:
