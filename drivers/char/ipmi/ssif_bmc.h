@@ -31,9 +31,10 @@
 #define MAX_IPMI_DATA_PER_MIDDLE_TRANSACTION	31
 
 #define	SSIF_IPMI_REQUEST			0x2
+#define	SSIF_IPMI_RESPONSE			0x3
 #define	SSIF_IPMI_MULTI_PART_REQUEST_START	0x6
 #define	SSIF_IPMI_MULTI_PART_REQUEST_MIDDLE	0x7
-#define	SSIF_IPMI_RESPONSE			0x3
+#define SSIF_IPMI_MULTI_PART_REQUEST_END	0x8
 #define	SSIF_IPMI_MULTI_PART_RESPONSE_MIDDLE	0x9
 
 struct ssif_msg {
@@ -65,6 +66,7 @@ struct ssif_bmc_ctx {
 	bool			is_multi_part_read;
 	u8			num_bytes_processed;
 	u8			remain_data_len;
+	u8			recv_data_len;
 	/* Block Number of a Multi-part Read Transaction */
 	u8			block_num;
 	size_t			msg_idx;
