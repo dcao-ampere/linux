@@ -59,9 +59,6 @@
 #define DIMM_VRD2_CURR_REG		0x3C
 #define RCA_VRD_CURR_REG		0x3D
 
-/* Add for DIMM group */
-#define DIMM_GROUP_DUMMY_REG		0xFF
-
 struct smpro_hwmon {
 	struct regmap *regmap;
 };
@@ -71,14 +68,10 @@ static const u8 temp_regs[] = {
 	SOC_VRD_TEMP_REG,
 	DIMM_VRD_TEMP_REG,
 	CORE_VRD_TEMP_REG,
-	/* reserved for DIMM G0 */
-	DIMM_GROUP_DUMMY_REG,
 	CH0_DIMM_TEMP_REG,
 	CH1_DIMM_TEMP_REG,
 	CH2_DIMM_TEMP_REG,
 	CH3_DIMM_TEMP_REG,
-	/* reserved for DIMM G1 */
-	DIMM_GROUP_DUMMY_REG,
 	CH4_DIMM_TEMP_REG,
 	CH5_DIMM_TEMP_REG,
 	CH6_DIMM_TEMP_REG,
@@ -93,8 +86,6 @@ static const u8 volt_regs[] = {
 	SOC_VRD_VOLT_REG,
 	DIMM_VRD1_VOLT_REG,
 	DIMM_VRD2_VOLT_REG,
-	/* vrd1 has higher priority than vrd2 using vrd1 as output for ddr */
-	DIMM_VRD1_VOLT_REG,
 	RCA_VRD_VOLT_REG,
 };
 
@@ -111,8 +102,6 @@ enum pwr_regs {
 	SOC_PWR,
 	DIMM_VRD1_PWR,
 	DIMM_VRD2_PWR,
-	CPU_VRD_PWR,
-	DIMM_VRD_PWR,
 	RCA_VRD_PWR,
 	SOC_TDP_PWR,
 };
@@ -136,47 +125,22 @@ static const char * const label[] = {
 	"CPU VRD",
 	"RCA VRD",
 	"SOC TDP",
-	"DIMM G0",
-	"DIMM G1",
 };
 
 static int smpro_read_temp(struct device *dev, u32 attr, int channel,
 				long *val)
 {
 	struct smpro_hwmon *hwmon = dev_get_drvdata(dev);
-	unsigned int t_max = 0xFFFFFFFF;
 	unsigned int value;
-	s32 i = 0;
 	int ret = -1;
 
 	switch (attr) {
 	case hwmon_temp_input:
-		if (temp_regs[channel] == DIMM_GROUP_DUMMY_REG) {
-			for (i = 1; i <= 4; i++) {
-				ret = regmap_read(hwmon->regmap,
-						temp_regs[channel + i], &value);
-				if (ret)
-					return ret;
-
-				if (value == 0xFFFF)
-					continue;
-
-				value &= 0x1ff;
-				if (t_max != 0xFFFFFFFF)
-					t_max = (value > t_max) ? value : t_max;
-				else
-					t_max = value;
-			}
-			if (t_max == 0xFFFFFFFF)
-				return -1;
-			*val = (t_max & 0x1ff) * 1000;
-		} else {
-			ret = regmap_read(hwmon->regmap,
-					temp_regs[channel], &value);
-			if (ret)
-				return ret;
-			*val = (value & 0x1ff) * 1000;
-		}
+		ret = regmap_read(hwmon->regmap,
+				temp_regs[channel], &value);
+		if (ret)
+			return ret;
+		*val = (value & 0x1ff) * 1000;
 		break;
 	default:
 		return -EOPNOTSUPP;
@@ -226,7 +190,6 @@ static int smpro_read_power(struct device *dev, u32 attr, int channel,
 				long *val_pwr)
 {
 	struct smpro_hwmon *hwmon = dev_get_drvdata(dev);
-	unsigned int val2 = 0, val2_mw = 0;
 	unsigned int val = 0, val_mw = 0;
 	int ret = 0;
 
@@ -290,48 +253,14 @@ static int smpro_read_power(struct device *dev, u32 attr, int channel,
 			if (ret)
 				return ret;
 			break;
-		case CPU_VRD_PWR:
-			if (!ret)
-				ret = regmap_read(hwmon->regmap,
-						CORE_VRD_PWR_REG, &val);
-			if (!ret)
-				ret = regmap_read(hwmon->regmap,
-						CORE_VRD_PWR_MW_REG, &val_mw);
-			if (!ret)
-				ret = regmap_read(hwmon->regmap,
-						SOC_PWR_REG, &val2);
-			if (!ret)
-				ret = regmap_read(hwmon->regmap,
-						SOC_PWR_MW_REG, &val2_mw);
-			if (ret)
-				return ret;
-			break;
-		case DIMM_VRD_PWR:
-			if (!ret)
-				ret = regmap_read(hwmon->regmap,
-						DIMM_VRD1_PWR_REG, &val);
-			if (!ret)
-				ret = regmap_read(hwmon->regmap,
-						DIMM_VRD1_PWR_MW_REG, &val_mw);
-			if (!ret)
-				ret = regmap_read(hwmon->regmap,
-						DIMM_VRD2_PWR_REG, &val2);
-			if (!ret)
-				ret = regmap_read(hwmon->regmap,
-						DIMM_VRD2_PWR_MW_REG, &val2_mw);
-			if (ret)
-				return ret;
-			break;
 		default:
 			return -EOPNOTSUPP;
 		}
 
 		if (val_mw == 0xffff)
 			val_mw = 0;
-		if (val2_mw == 0xffff)
-			val2_mw = 0;
 
-		*val_pwr = (val + val2)*1000000 + (val_mw + val2_mw)*1000;
+		*val_pwr = val*1000000 + val_mw*1000;
 		return 0;
 	default:
 		return -EOPNOTSUPP;
@@ -392,8 +321,6 @@ static const u32 smpro_temp_config[] = {
 	HWMON_T_INPUT,
 	HWMON_T_INPUT,
 	HWMON_T_INPUT,
-	HWMON_T_INPUT,
-	HWMON_T_INPUT,
 	0
 };
 
@@ -403,7 +330,6 @@ static const struct hwmon_channel_info smpro_temp = {
 };
 
 static const u32 smpro_in_config[] = {
-	HWMON_I_INPUT,
 	HWMON_I_INPUT,
 	HWMON_I_INPUT,
 	HWMON_I_INPUT,
@@ -432,8 +358,6 @@ static const struct hwmon_channel_info smpro_curr = {
 };
 
 static const u32 smpro_power_config[] = {
-	HWMON_P_INPUT,
-	HWMON_P_INPUT,
 	HWMON_P_INPUT,
 	HWMON_P_INPUT,
 	HWMON_P_INPUT,
@@ -471,35 +395,30 @@ static SENSOR_DEVICE_ATTR(temp1_label, 0444, show_label, NULL, 0);
 static SENSOR_DEVICE_ATTR(temp2_label, 0444, show_label, NULL, 1);
 static SENSOR_DEVICE_ATTR(temp3_label, 0444, show_label, NULL, 2);
 static SENSOR_DEVICE_ATTR(temp4_label, 0444, show_label, NULL, 5);
-static SENSOR_DEVICE_ATTR(temp5_label, 0444, show_label, NULL, 19);
-static SENSOR_DEVICE_ATTR(temp6_label, 0444, show_label, NULL, 6);
-static SENSOR_DEVICE_ATTR(temp7_label, 0444, show_label, NULL, 7);
-static SENSOR_DEVICE_ATTR(temp8_label, 0444, show_label, NULL, 8);
-static SENSOR_DEVICE_ATTR(temp9_label, 0444, show_label, NULL, 9);
-static SENSOR_DEVICE_ATTR(temp10_label, 0444, show_label, NULL, 20);
-static SENSOR_DEVICE_ATTR(temp11_label, 0444, show_label, NULL, 10);
-static SENSOR_DEVICE_ATTR(temp12_label, 0444, show_label, NULL, 11);
-static SENSOR_DEVICE_ATTR(temp13_label, 0444, show_label, NULL, 12);
-static SENSOR_DEVICE_ATTR(temp14_label, 0444, show_label, NULL, 13);
-static SENSOR_DEVICE_ATTR(temp15_label, 0444, show_label, NULL, 14);
-static SENSOR_DEVICE_ATTR(temp16_label, 0444, show_label, NULL, 15);
-static SENSOR_DEVICE_ATTR(temp17_label, 0444, show_label, NULL, 17);
+static SENSOR_DEVICE_ATTR(temp5_label, 0444, show_label, NULL, 6);
+static SENSOR_DEVICE_ATTR(temp6_label, 0444, show_label, NULL, 7);
+static SENSOR_DEVICE_ATTR(temp7_label, 0444, show_label, NULL, 8);
+static SENSOR_DEVICE_ATTR(temp8_label, 0444, show_label, NULL, 9);
+static SENSOR_DEVICE_ATTR(temp9_label, 0444, show_label, NULL, 10);
+static SENSOR_DEVICE_ATTR(temp10_label, 0444, show_label, NULL, 11);
+static SENSOR_DEVICE_ATTR(temp11_label, 0444, show_label, NULL, 12);
+static SENSOR_DEVICE_ATTR(temp12_label, 0444, show_label, NULL, 13);
+static SENSOR_DEVICE_ATTR(temp13_label, 0444, show_label, NULL, 14);
+static SENSOR_DEVICE_ATTR(temp14_label, 0444, show_label, NULL, 15);
+static SENSOR_DEVICE_ATTR(temp15_label, 0444, show_label, NULL, 17);
 
 static SENSOR_DEVICE_ATTR(in0_label, 0444, show_label, NULL, 5);
 static SENSOR_DEVICE_ATTR(in1_label, 0444, show_label, NULL, 1);
 static SENSOR_DEVICE_ATTR(in2_label, 0444, show_label, NULL, 3);
 static SENSOR_DEVICE_ATTR(in3_label, 0444, show_label, NULL, 4);
-static SENSOR_DEVICE_ATTR(in4_label, 0444, show_label, NULL, 2);
-static SENSOR_DEVICE_ATTR(in5_label, 0444, show_label, NULL, 17);
+static SENSOR_DEVICE_ATTR(in4_label, 0444, show_label, NULL, 17);
 
 static SENSOR_DEVICE_ATTR(power1_label, 0444, show_label, NULL, 5);
 static SENSOR_DEVICE_ATTR(power2_label, 0444, show_label, NULL, 0);
 static SENSOR_DEVICE_ATTR(power3_label, 0444, show_label, NULL, 3);
 static SENSOR_DEVICE_ATTR(power4_label, 0444, show_label, NULL, 4);
-static SENSOR_DEVICE_ATTR(power5_label, 0444, show_label, NULL, 16);
-static SENSOR_DEVICE_ATTR(power6_label, 0444, show_label, NULL, 2);
-static SENSOR_DEVICE_ATTR(power7_label, 0444, show_label, NULL, 17);
-static SENSOR_DEVICE_ATTR(power8_label, 0444, show_label, NULL, 18);
+static SENSOR_DEVICE_ATTR(power5_label, 0444, show_label, NULL, 2);
+static SENSOR_DEVICE_ATTR(power6_label, 0444, show_label, NULL, 17);
 
 static SENSOR_DEVICE_ATTR(curr1_label, 0444, show_label, NULL, 5);
 static SENSOR_DEVICE_ATTR(curr2_label, 0444, show_label, NULL, 1);
@@ -523,15 +442,12 @@ static struct attribute *smpro_attrs[] = {
 	&sensor_dev_attr_temp13_label.dev_attr.attr,
 	&sensor_dev_attr_temp14_label.dev_attr.attr,
 	&sensor_dev_attr_temp15_label.dev_attr.attr,
-	&sensor_dev_attr_temp16_label.dev_attr.attr,
-	&sensor_dev_attr_temp17_label.dev_attr.attr,
 
 	&sensor_dev_attr_in0_label.dev_attr.attr,
 	&sensor_dev_attr_in1_label.dev_attr.attr,
 	&sensor_dev_attr_in2_label.dev_attr.attr,
 	&sensor_dev_attr_in3_label.dev_attr.attr,
 	&sensor_dev_attr_in4_label.dev_attr.attr,
-	&sensor_dev_attr_in5_label.dev_attr.attr,
 
 	&sensor_dev_attr_curr1_label.dev_attr.attr,
 	&sensor_dev_attr_curr2_label.dev_attr.attr,
@@ -545,8 +461,6 @@ static struct attribute *smpro_attrs[] = {
 	&sensor_dev_attr_power4_label.dev_attr.attr,
 	&sensor_dev_attr_power5_label.dev_attr.attr,
 	&sensor_dev_attr_power6_label.dev_attr.attr,
-	&sensor_dev_attr_power7_label.dev_attr.attr,
-	&sensor_dev_attr_power8_label.dev_attr.attr,
 
 	NULL
 };
