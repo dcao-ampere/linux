@@ -1,21 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Ampere Computing SoC's SMpro Hardware Monitoring Driver
- *
- * Copyright (c) 2019-2020, Ampere Computing LLC
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 #include <linux/bitfield.h>
 #include <linux/hwmon.h>
@@ -28,54 +13,54 @@
 #include <linux/regmap.h>
 
 /* Identification Registers */
-#define MANUFACTURER_ID_REG             0x02
+#define MANUFACTURER_ID_REG		0x02
 #define AMPERE_MANUFACTURER_ID		0xCD3A
 
 /* Capability Registers  */
-#define SOC_TDP_REG                     0x0E
+#define SOC_TDP_REG			0x0E
 
 /* Logical Power Sensor Registers */
-#define SOC_TEMP_REG                    0x10
-#define SOC_VRD_TEMP_REG                0x11
-#define DIMM_VRD_TEMP_REG               0x12
-#define CORE_VRD_TEMP_REG               0x13
-#define CH0_DIMM_TEMP_REG               0x14
-#define CH1_DIMM_TEMP_REG               0x15
-#define CH2_DIMM_TEMP_REG               0x16
-#define CH3_DIMM_TEMP_REG               0x17
-#define CH4_DIMM_TEMP_REG               0x18
-#define CH5_DIMM_TEMP_REG               0x19
-#define CH6_DIMM_TEMP_REG               0x1A
-#define CH7_DIMM_TEMP_REG               0x1B
-#define RCA_VRD_TEMP_REG                0x1C
+#define SOC_TEMP_REG			0x10
+#define SOC_VRD_TEMP_REG		0x11
+#define DIMM_VRD_TEMP_REG		0x12
+#define CORE_VRD_TEMP_REG		0x13
+#define CH0_DIMM_TEMP_REG		0x14
+#define CH1_DIMM_TEMP_REG		0x15
+#define CH2_DIMM_TEMP_REG		0x16
+#define CH3_DIMM_TEMP_REG		0x17
+#define CH4_DIMM_TEMP_REG		0x18
+#define CH5_DIMM_TEMP_REG		0x19
+#define CH6_DIMM_TEMP_REG		0x1A
+#define CH7_DIMM_TEMP_REG		0x1B
+#define RCA_VRD_TEMP_REG		0x1C
 
-#define CORE_VRD_PWR_REG                0x20
-#define SOC_PWR_REG                 0x21
-#define DIMM_VRD1_PWR_REG               0x22
-#define DIMM_VRD2_PWR_REG               0x23
-#define CORE_VRD_PWR_MW_REG             0x26
-#define SOC_PWR_MW_REG              0x27
-#define DIMM_VRD1_PWR_MW_REG            0x28
-#define DIMM_VRD2_PWR_MW_REG            0x29
-#define RCA_VRD_PWR_REG                 0x2A
-#define RCA_VRD_PWR_MW_REG              0x2B
+#define CORE_VRD_PWR_REG		0x20
+#define SOC_PWR_REG			0x21
+#define DIMM_VRD1_PWR_REG		0x22
+#define DIMM_VRD2_PWR_REG		0x23
+#define CORE_VRD_PWR_MW_REG		0x26
+#define SOC_PWR_MW_REG			0x27
+#define DIMM_VRD1_PWR_MW_REG		0x28
+#define DIMM_VRD2_PWR_MW_REG		0x29
+#define RCA_VRD_PWR_REG			0x2A
+#define RCA_VRD_PWR_MW_REG		0x2B
 
-#define MEM_HOT_THRESHOLD_REG           0x32
-#define SOC_VR_HOT_THRESHOLD_REG        0x33
-#define CORE_VRD_VOLT_REG               0x34
-#define SOC_VRD_VOLT_REG                0x35
-#define DIMM_VRD1_VOLT_REG              0x36
-#define DIMM_VRD2_VOLT_REG              0x37
-#define RCA_VRD_VOLT_REG                0x38
+#define MEM_HOT_THRESHOLD_REG		0x32
+#define SOC_VR_HOT_THRESHOLD_REG	0x33
+#define CORE_VRD_VOLT_REG		0x34
+#define SOC_VRD_VOLT_REG		0x35
+#define DIMM_VRD1_VOLT_REG		0x36
+#define DIMM_VRD2_VOLT_REG		0x37
+#define RCA_VRD_VOLT_REG		0x38
 
-#define CORE_VRD_CURR_REG               0x39
-#define SOC_VRD_CURR_REG                0x3A
-#define DIMM_VRD1_CURR_REG              0x3B
-#define DIMM_VRD2_CURR_REG              0x3C
-#define RCA_VRD_CURR_REG                0x3D
+#define CORE_VRD_CURR_REG		0x39
+#define SOC_VRD_CURR_REG		0x3A
+#define DIMM_VRD1_CURR_REG		0x3B
+#define DIMM_VRD2_CURR_REG		0x3C
+#define RCA_VRD_CURR_REG		0x3D
 
 /* Add for DIMM group */
-#define DIMM_GROUP_DUMMY_REG            0xFF
+#define DIMM_GROUP_DUMMY_REG		0xFF
 
 struct smpro_hwmon {
 	struct regmap *regmap;
