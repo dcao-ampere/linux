@@ -223,17 +223,25 @@ static int complete_response(struct ssif_bmc_ctx *ssif_bmc)
 	return 0;
 }
 
-static void set_response_buffer(struct ssif_bmc_ctx *ssif_bmc)
+static void set_response_buffer(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
 {
 	u8 response_data_len = 0;
 	int idx = 0;
+	u8 data_len;
 
+	data_len = ssif_bmc->response.len;
 	switch (ssif_bmc->smbus_cmd) {
 	case SSIF_IPMI_RESPONSE:
 		/*
-		 * IPMI READ Start message can carry up to 30 bytes IPMI Data
-		 * and Start Flag 0x00 0x01.
+		 * Read Start length is 32 bytes.
+		 * Read Start transfer first 30 bytes of IPMI response
+		 * and 2 special code 0x00, 0x01.
 		 */
+		*val = MAX_PAYLOAD_PER_TRANSACTION;
+		ssif_bmc->remain_data_len =
+			data_len - MAX_IPMI_DATA_PER_START_TRANSACTION;
+		ssif_bmc->block_num = 0;
+
 		ssif_bmc->response_buffer[idx++] = 0x00; /* Start Flag */
 		ssif_bmc->response_buffer[idx++] = 0x01; /* Start Flag */
 		ssif_bmc->response_buffer[idx++] = ssif_bmc->response.netfn_lun;
@@ -252,17 +260,37 @@ static void set_response_buffer(struct ssif_bmc_ctx *ssif_bmc)
 		 * IPMI READ Middle or READ End messages can carry up to 31 bytes
 		 * IPMI data plus block number byte.
 		 */
-		ssif_bmc->response_buffer[idx++] = ssif_bmc->block_num;
-
-		if (ssif_bmc->remain_data_len < MAX_IPMI_DATA_PER_MIDDLE_TRANSACTION)
+		if (ssif_bmc->remain_data_len <=
+				MAX_IPMI_DATA_PER_MIDDLE_TRANSACTION) {
+			/*
+			 * This is READ End message
+			 *  Return length is the remaining response data length
+			 *  plus block number
+			 *  Block number 0xFF is to indicate this is last message
+			 *
+			 * Return length is: remain response plus block number
+			 */
+			*val = ssif_bmc->remain_data_len + 1;
+			ssif_bmc->block_num = 0xFF;
+			ssif_bmc->response_buffer[idx++] = ssif_bmc->block_num;
 			response_data_len = ssif_bmc->remain_data_len;
-		else
+		} else {
+			/*
+			 * This is READ Middle message
+			 *  Response length is the maximum SMBUS transfer length
+			 *  Block number byte is incremented
+			 * Return length is maximum SMBUS transfer length
+			 */
+			*val = MAX_PAYLOAD_PER_TRANSACTION;
+			ssif_bmc->remain_data_len -= MAX_IPMI_DATA_PER_MIDDLE_TRANSACTION;
 			response_data_len = MAX_IPMI_DATA_PER_MIDDLE_TRANSACTION;
+			ssif_bmc->response_buffer[idx++] = ssif_bmc->block_num;
+			ssif_bmc->block_num++;
+		}
 
 		memcpy(&ssif_bmc->response_buffer[idx],
 				ssif_bmc->response.payload + 1 + ssif_bmc->num_bytes_processed,
 				response_data_len);
-
 		break;
 
 	default:
@@ -281,11 +309,8 @@ static void set_response_buffer(struct ssif_bmc_ctx *ssif_bmc)
 static void event_request_read(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
 {
 	u8 *buf;
-	u8 data_len;
 
 	buf = (u8 *) &ssif_bmc->response;
-	data_len = ssif_bmc->response.len;
-
 	/* Single-part processing */
 	if (!ssif_bmc->is_multi_part_read) {
 		/*
@@ -305,60 +330,13 @@ static void event_request_read(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
 
 		return;
 	}
-
 	/* Multi-part processing */
-	switch (ssif_bmc->smbus_cmd) {
-	case SSIF_IPMI_RESPONSE:
-		/* Read Start length is 32 bytes
-		 * Read Start transfer first 30 bytes of IPMI response
-		 *  and 2 special code 0x00, 0x01
-		 */
-		*val = MAX_PAYLOAD_PER_TRANSACTION;
-		ssif_bmc->remain_data_len =
-			data_len - MAX_IPMI_DATA_PER_START_TRANSACTION;
-		ssif_bmc->block_num = 0;
-		break;
-
-	case SSIF_IPMI_MULTI_PART_RESPONSE_MIDDLE:
-		/* Read middle part */
-		if (ssif_bmc->remain_data_len <=
-				MAX_IPMI_DATA_PER_MIDDLE_TRANSACTION) {
-			/*
-			 * This is READ End message
-			 *  Return length is the remaining response data length
-			 *  plus block number
-			 *  Block number 0xFF is to indicate this is last message
-			 *
-			 * Return length is: remain response plus block number
-			 */
-			*val = ssif_bmc->remain_data_len + 1;
-			ssif_bmc->block_num = 0xFF;
-		} else {
-			/*
-			 * This is READ Middle message
-			 *  Response length is the maximum SMBUS transfer length
-			 *  Block number byte is incremented
-			 * Return length is maximum SMBUS transfer length
-			 */
-			*val = MAX_PAYLOAD_PER_TRANSACTION;
-			ssif_bmc->block_num++;
-			ssif_bmc->remain_data_len -=
-				MAX_IPMI_DATA_PER_MIDDLE_TRANSACTION;
-		}
-		break;
-
-	default:
-		/* Do not expect to go to this case */
-		pr_err("Error: Unexpected SMBus command received 0x%x\n",
-				ssif_bmc->smbus_cmd);
-		break;
-	}
-
 	/* Prepare the response buffer that ready to be sent */
-	set_response_buffer(ssif_bmc);
+	set_response_buffer(ssif_bmc, val);
 
 	return;
 }
+
 /* Process the IPMI response that will be read by master */
 static void event_process_read(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
 {
