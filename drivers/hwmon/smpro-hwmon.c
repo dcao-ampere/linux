@@ -296,87 +296,42 @@ static umode_t smpro_is_visible(const void *data,
 {
 	return 0444;
 }
-
-static ssize_t show_label(struct device *dev, struct device_attribute *devattr,
-				char *buf)
-{
-	int index = to_sensor_dev_attr(devattr)->index;
-
-	return sprintf(buf, "%s\n", label[index]);
-}
-
-static const u32 smpro_temp_config[] = {
-	HWMON_T_INPUT,
-	HWMON_T_INPUT,
-	HWMON_T_INPUT,
-	HWMON_T_INPUT,
-	HWMON_T_INPUT,
-	HWMON_T_INPUT,
-	HWMON_T_INPUT,
-	HWMON_T_INPUT,
-	HWMON_T_INPUT,
-	HWMON_T_INPUT,
-	HWMON_T_INPUT,
-	HWMON_T_INPUT,
-	HWMON_T_INPUT,
-	HWMON_T_INPUT,
-	HWMON_T_INPUT,
-	0
-};
-
-static const struct hwmon_channel_info smpro_temp = {
-	.type = hwmon_temp,
-	.config = smpro_temp_config,
-};
-
-static const u32 smpro_in_config[] = {
-	HWMON_I_INPUT,
-	HWMON_I_INPUT,
-	HWMON_I_INPUT,
-	HWMON_I_INPUT,
-	HWMON_I_INPUT,
-	0
-};
-
-static const struct hwmon_channel_info smpro_in = {
-	.type = hwmon_in,
-	.config = smpro_in_config,
-};
-
-static const u32 smpro_curr_config[] = {
-	HWMON_C_INPUT,
-	HWMON_C_INPUT,
-	HWMON_C_INPUT,
-	HWMON_C_INPUT,
-	HWMON_C_INPUT,
-	0
-};
-
-static const struct hwmon_channel_info smpro_curr = {
-	.type = hwmon_curr,
-	.config = smpro_curr_config,
-};
-
-static const u32 smpro_power_config[] = {
-	HWMON_P_INPUT,
-	HWMON_P_INPUT,
-	HWMON_P_INPUT,
-	HWMON_P_INPUT,
-	HWMON_P_INPUT,
-	HWMON_P_INPUT,
-	0
-};
-
-static const struct hwmon_channel_info smpro_power = {
-	.type = hwmon_power,
-	.config = smpro_power_config,
-};
-
 static const struct hwmon_channel_info *smpro_info[] = {
-	&smpro_temp,
-	&smpro_in,
-	&smpro_power,
-	&smpro_curr,
+	HWMON_CHANNEL_INFO(temp,
+			HWMON_T_INPUT | HWMON_T_LABEL,
+			HWMON_T_INPUT | HWMON_T_LABEL,
+			HWMON_T_INPUT | HWMON_T_LABEL,
+			HWMON_T_INPUT | HWMON_T_LABEL,
+			HWMON_T_INPUT | HWMON_T_LABEL,
+			HWMON_T_INPUT | HWMON_T_LABEL,
+			HWMON_T_INPUT | HWMON_T_LABEL,
+			HWMON_T_INPUT | HWMON_T_LABEL,
+			HWMON_T_INPUT | HWMON_T_LABEL,
+			HWMON_T_INPUT | HWMON_T_LABEL,
+			HWMON_T_INPUT | HWMON_T_LABEL,
+			HWMON_T_INPUT | HWMON_T_LABEL,
+			HWMON_T_INPUT | HWMON_T_LABEL,
+			HWMON_T_INPUT | HWMON_T_LABEL,
+			HWMON_T_INPUT | HWMON_T_LABEL),
+	HWMON_CHANNEL_INFO(in,
+			HWMON_I_INPUT | HWMON_I_LABEL,
+			HWMON_I_INPUT | HWMON_I_LABEL,
+			HWMON_I_INPUT | HWMON_I_LABEL,
+			HWMON_I_INPUT | HWMON_I_LABEL,
+			HWMON_I_INPUT | HWMON_I_LABEL),
+	HWMON_CHANNEL_INFO(power,
+			HWMON_P_INPUT | HWMON_P_LABEL,
+			HWMON_P_INPUT | HWMON_P_LABEL,
+			HWMON_P_INPUT | HWMON_P_LABEL,
+			HWMON_P_INPUT | HWMON_P_LABEL,
+			HWMON_P_INPUT | HWMON_P_LABEL,
+			HWMON_P_INPUT | HWMON_P_LABEL),
+	HWMON_CHANNEL_INFO(curr,
+			HWMON_C_INPUT | HWMON_C_LABEL,
+			HWMON_C_INPUT | HWMON_C_LABEL,
+			HWMON_C_INPUT | HWMON_C_LABEL,
+			HWMON_C_INPUT | HWMON_C_LABEL,
+			HWMON_C_INPUT | HWMON_C_LABEL),
 	NULL
 };
 
@@ -390,81 +345,6 @@ static const struct hwmon_chip_info smpro_chip_info = {
 	.ops = &smpro_hwmon_ops,
 	.info = smpro_info,
 };
-
-static SENSOR_DEVICE_ATTR(temp1_label, 0444, show_label, NULL, 0);
-static SENSOR_DEVICE_ATTR(temp2_label, 0444, show_label, NULL, 1);
-static SENSOR_DEVICE_ATTR(temp3_label, 0444, show_label, NULL, 2);
-static SENSOR_DEVICE_ATTR(temp4_label, 0444, show_label, NULL, 5);
-static SENSOR_DEVICE_ATTR(temp5_label, 0444, show_label, NULL, 6);
-static SENSOR_DEVICE_ATTR(temp6_label, 0444, show_label, NULL, 7);
-static SENSOR_DEVICE_ATTR(temp7_label, 0444, show_label, NULL, 8);
-static SENSOR_DEVICE_ATTR(temp8_label, 0444, show_label, NULL, 9);
-static SENSOR_DEVICE_ATTR(temp9_label, 0444, show_label, NULL, 10);
-static SENSOR_DEVICE_ATTR(temp10_label, 0444, show_label, NULL, 11);
-static SENSOR_DEVICE_ATTR(temp11_label, 0444, show_label, NULL, 12);
-static SENSOR_DEVICE_ATTR(temp12_label, 0444, show_label, NULL, 13);
-static SENSOR_DEVICE_ATTR(temp13_label, 0444, show_label, NULL, 14);
-static SENSOR_DEVICE_ATTR(temp14_label, 0444, show_label, NULL, 15);
-static SENSOR_DEVICE_ATTR(temp15_label, 0444, show_label, NULL, 17);
-
-static SENSOR_DEVICE_ATTR(in0_label, 0444, show_label, NULL, 5);
-static SENSOR_DEVICE_ATTR(in1_label, 0444, show_label, NULL, 1);
-static SENSOR_DEVICE_ATTR(in2_label, 0444, show_label, NULL, 3);
-static SENSOR_DEVICE_ATTR(in3_label, 0444, show_label, NULL, 4);
-static SENSOR_DEVICE_ATTR(in4_label, 0444, show_label, NULL, 17);
-
-static SENSOR_DEVICE_ATTR(power1_label, 0444, show_label, NULL, 5);
-static SENSOR_DEVICE_ATTR(power2_label, 0444, show_label, NULL, 0);
-static SENSOR_DEVICE_ATTR(power3_label, 0444, show_label, NULL, 3);
-static SENSOR_DEVICE_ATTR(power4_label, 0444, show_label, NULL, 4);
-static SENSOR_DEVICE_ATTR(power5_label, 0444, show_label, NULL, 2);
-static SENSOR_DEVICE_ATTR(power6_label, 0444, show_label, NULL, 17);
-
-static SENSOR_DEVICE_ATTR(curr1_label, 0444, show_label, NULL, 5);
-static SENSOR_DEVICE_ATTR(curr2_label, 0444, show_label, NULL, 1);
-static SENSOR_DEVICE_ATTR(curr3_label, 0444, show_label, NULL, 3);
-static SENSOR_DEVICE_ATTR(curr4_label, 0444, show_label, NULL, 4);
-static SENSOR_DEVICE_ATTR(curr5_label, 0444, show_label, NULL, 17);
-
-static struct attribute *smpro_attrs[] = {
-	&sensor_dev_attr_temp1_label.dev_attr.attr,
-	&sensor_dev_attr_temp2_label.dev_attr.attr,
-	&sensor_dev_attr_temp3_label.dev_attr.attr,
-	&sensor_dev_attr_temp4_label.dev_attr.attr,
-	&sensor_dev_attr_temp5_label.dev_attr.attr,
-	&sensor_dev_attr_temp6_label.dev_attr.attr,
-	&sensor_dev_attr_temp7_label.dev_attr.attr,
-	&sensor_dev_attr_temp8_label.dev_attr.attr,
-	&sensor_dev_attr_temp9_label.dev_attr.attr,
-	&sensor_dev_attr_temp10_label.dev_attr.attr,
-	&sensor_dev_attr_temp11_label.dev_attr.attr,
-	&sensor_dev_attr_temp12_label.dev_attr.attr,
-	&sensor_dev_attr_temp13_label.dev_attr.attr,
-	&sensor_dev_attr_temp14_label.dev_attr.attr,
-	&sensor_dev_attr_temp15_label.dev_attr.attr,
-
-	&sensor_dev_attr_in0_label.dev_attr.attr,
-	&sensor_dev_attr_in1_label.dev_attr.attr,
-	&sensor_dev_attr_in2_label.dev_attr.attr,
-	&sensor_dev_attr_in3_label.dev_attr.attr,
-	&sensor_dev_attr_in4_label.dev_attr.attr,
-
-	&sensor_dev_attr_curr1_label.dev_attr.attr,
-	&sensor_dev_attr_curr2_label.dev_attr.attr,
-	&sensor_dev_attr_curr3_label.dev_attr.attr,
-	&sensor_dev_attr_curr4_label.dev_attr.attr,
-	&sensor_dev_attr_curr5_label.dev_attr.attr,
-
-	&sensor_dev_attr_power1_label.dev_attr.attr,
-	&sensor_dev_attr_power2_label.dev_attr.attr,
-	&sensor_dev_attr_power3_label.dev_attr.attr,
-	&sensor_dev_attr_power4_label.dev_attr.attr,
-	&sensor_dev_attr_power5_label.dev_attr.attr,
-	&sensor_dev_attr_power6_label.dev_attr.attr,
-
-	NULL
-};
-ATTRIBUTE_GROUPS(smpro);
 
 static int check_valid_id (struct regmap *regmap)
 {
@@ -500,7 +380,7 @@ static int smpro_hwmon_probe(struct platform_device *pdev)
 
 	hwmon_dev = devm_hwmon_device_register_with_info(&pdev->dev,
 			"smpro_hwmon", hwmon,
-			&smpro_chip_info, smpro_groups);
+			&smpro_chip_info, NULL);
 	if (IS_ERR(hwmon_dev))
 		dev_err(&pdev->dev, "failed to register as hwmon device");
 
