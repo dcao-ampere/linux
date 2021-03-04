@@ -63,72 +63,154 @@ struct smpro_hwmon {
 	struct regmap *regmap;
 };
 
-static const u8 temp_regs[] = {
-	SOC_TEMP_REG,
-	SOC_VRD_TEMP_REG,
-	DIMM_VRD_TEMP_REG,
-	CORE_VRD_TEMP_REG,
-	CH0_DIMM_TEMP_REG,
-	CH1_DIMM_TEMP_REG,
-	CH2_DIMM_TEMP_REG,
-	CH3_DIMM_TEMP_REG,
-	CH4_DIMM_TEMP_REG,
-	CH5_DIMM_TEMP_REG,
-	CH6_DIMM_TEMP_REG,
-	CH7_DIMM_TEMP_REG,
-	MEM_HOT_THRESHOLD_REG,
-	SOC_VR_HOT_THRESHOLD_REG,
-	RCA_VRD_TEMP_REG,
+struct smpro_sensor {
+	const u8 reg;
+	const u8 reg_ext;
+	const char *label;
 };
 
-static const u8 volt_regs[] = {
-	CORE_VRD_VOLT_REG,
-	SOC_VRD_VOLT_REG,
-	DIMM_VRD1_VOLT_REG,
-	DIMM_VRD2_VOLT_REG,
-	RCA_VRD_VOLT_REG,
+static const struct smpro_sensor temperature[] = {
+	{
+		.reg = SOC_TEMP_REG,
+		.label = "temp1 SoC"
+	},
+	{
+		.reg = SOC_VRD_TEMP_REG,
+		.label = "temp2 SoC VRD"
+	},
+	{
+		.reg = DIMM_VRD_TEMP_REG,
+		.label = "temp3 DIMM VRD"
+	},
+	{
+		.reg = CORE_VRD_TEMP_REG,
+		.label = "temp4 CORE VRD"
+	},
+	{
+		.reg = CH0_DIMM_TEMP_REG,
+		.label = "temp5 CH0 DIMM"
+	},
+	{
+		.reg = CH1_DIMM_TEMP_REG,
+		.label = "temp6 CH1 DIMM"
+	},
+	{
+		.reg = CH2_DIMM_TEMP_REG,
+		.label = "temp7 CH2 DIMM"
+	},
+	{
+		.reg = CH3_DIMM_TEMP_REG,
+		.label = "temp8 CH3 DIMM"
+	},
+	{
+		.reg = CH4_DIMM_TEMP_REG,
+		.label = "temp9 CH4 DIMM"
+	},
+	{
+		.reg = CH5_DIMM_TEMP_REG,
+		.label = "temp10 CH5 DIMM"
+	},
+	{
+		.reg = CH6_DIMM_TEMP_REG,
+		.label = "temp11 CH6 DIMM"
+	},
+	{
+		.reg = CH7_DIMM_TEMP_REG,
+		.label = "temp12 CH7 DIMM"
+	},
+	{
+		.reg = MEM_HOT_THRESHOLD_REG,
+		.label = "temp MEM HOT THRESHOLD"
+	},
+	{
+		.reg = SOC_VR_HOT_THRESHOLD_REG,
+		.label = "temp SOC VR HOT THRESHOLD"
+	},
+	{
+		.reg = RCA_VRD_TEMP_REG,
+		.label = "temp13 RCA VRD"
+	},
 };
 
-static const u8 curr_regs[] = {
-	CORE_VRD_CURR_REG,
-	SOC_VRD_CURR_REG,
-	DIMM_VRD1_CURR_REG,
-	DIMM_VRD2_CURR_REG,
-	RCA_VRD_CURR_REG,
+static const struct smpro_sensor voltage[] = {
+	{
+		.reg = CORE_VRD_VOLT_REG,
+		.label = "vout0 CORE VRD"
+	},
+	{
+		.reg = SOC_VRD_VOLT_REG,
+		.label = "vout1 SoC VRD"
+	},
+	{
+		.reg = DIMM_VRD1_VOLT_REG,
+		.label = "vout2 DIMM VRD1"
+	},
+	{
+		.reg = DIMM_VRD2_VOLT_REG,
+		.label = "vout3 DIMM VRD2"
+	},
+	{
+		.reg = RCA_VRD_VOLT_REG,
+		.label = "vout4 RCA VRD"
+	},
 };
 
-enum pwr_regs {
-	CORE_VRD_PWR,
-	SOC_PWR,
-	DIMM_VRD1_PWR,
-	DIMM_VRD2_PWR,
-	RCA_VRD_PWR,
-	SOC_TDP_PWR,
-};
-static const char * const label[] = {
-	"SoC",
-	"SoC VRD",
-	"DIMM VRD",
-	"DIMM VRD1",
-	"DIMM VRD2",
-	"CORE VRD",
-	"CH0 DIMM",
-	"CH1 DIMM",
-	"CH2 DIMM",
-	"CH3 DIMM",
-	"CH4 DIMM",
-	"CH5 DIMM",
-	"CH6 DIMM",
-	"CH7 DIMM",
-	"MEM HOT",
-	"SoC VR HOT",
-	"CPU VRD",
-	"RCA VRD",
-	"SOC TDP",
+static const struct smpro_sensor curr_sensor[] = {
+	{
+		.reg = CORE_VRD_CURR_REG,
+		.label = "iout1 CORE VRD"
+	},
+	{
+		.reg = SOC_VRD_CURR_REG,
+		.label = "iout2 SoC VRD"
+	},
+	{
+		.reg = DIMM_VRD1_CURR_REG,
+		.label = "iout3 DIMM VRD1"
+	},
+	{
+		.reg = DIMM_VRD2_CURR_REG,
+		.label = "iout4 DIMM VRD2"
+	},
+	{
+		.reg = RCA_VRD_CURR_REG,
+		.label = "iout5 RCA VRD"
+	},
 };
 
-static int smpro_read_temp(struct device *dev, u32 attr, int channel,
-				long *val)
+static const struct smpro_sensor power[] = {
+	{
+		.reg = CORE_VRD_PWR_REG,
+		.reg_ext = CORE_VRD_PWR_MW_REG,
+		.label = "power1 CORE VRD"
+	},
+	{
+		.reg = SOC_PWR_REG,
+		.reg_ext = SOC_PWR_MW_REG,
+		.label = "power2 SoC"
+	},
+	{
+		.reg = DIMM_VRD1_PWR_REG,
+		.reg_ext = DIMM_VRD1_PWR_MW_REG,
+		.label = "power3 DIMM VRD1"
+	},
+	{
+		.reg = DIMM_VRD2_PWR_REG,
+		.reg_ext = DIMM_VRD2_PWR_MW_REG,
+		.label = "power4 DIMM VRD2"
+	},
+	{
+		.reg = RCA_VRD_PWR_REG,
+		.reg_ext = RCA_VRD_PWR_MW_REG,
+		.label = "power5 RCA VRD"
+	},
+	{
+		.reg = SOC_TDP_REG,
+		.label = "power SOCKET TDP"
+	},
+};
+
+static int smpro_read_temp(struct device *dev, u32 attr, int channel, long *val)
 {
 	struct smpro_hwmon *hwmon = dev_get_drvdata(dev);
 	unsigned int value;
@@ -137,7 +219,7 @@ static int smpro_read_temp(struct device *dev, u32 attr, int channel,
 	switch (attr) {
 	case hwmon_temp_input:
 		ret = regmap_read(hwmon->regmap,
-				temp_regs[channel], &value);
+				temperature[channel].reg, &value);
 		if (ret)
 			return ret;
 		*val = (value & 0x1ff) * 1000;
@@ -148,8 +230,7 @@ static int smpro_read_temp(struct device *dev, u32 attr, int channel,
 	return 0;
 }
 
-static int smpro_read_in(struct device *dev, u32 attr, int channel,
-				long *val)
+static int smpro_read_in(struct device *dev, u32 attr, int channel, long *val)
 {
 	struct smpro_hwmon *hwmon = dev_get_drvdata(dev);
 	unsigned int value;
@@ -157,7 +238,7 @@ static int smpro_read_in(struct device *dev, u32 attr, int channel,
 
 	switch (attr) {
 	case hwmon_in_input:
-		ret = regmap_read(hwmon->regmap, volt_regs[channel], &value);
+		ret = regmap_read(hwmon->regmap, voltage[channel].reg, &value);
 		if (ret < 0)
 			return ret;
 		*val = value & 0x7fff;
@@ -167,8 +248,7 @@ static int smpro_read_in(struct device *dev, u32 attr, int channel,
 	}
 }
 
-static int smpro_read_curr(struct device *dev, u32 attr, int channel,
-				long *val)
+static int smpro_read_curr(struct device *dev, u32 attr, int channel, long *val)
 {
 	struct smpro_hwmon *hwmon = dev_get_drvdata(dev);
 	unsigned int value;
@@ -176,7 +256,7 @@ static int smpro_read_curr(struct device *dev, u32 attr, int channel,
 
 	switch (attr) {
 	case hwmon_curr_input:
-		ret = regmap_read(hwmon->regmap, curr_regs[channel], &value);
+		ret = regmap_read(hwmon->regmap, curr_sensor[channel].reg, &value);
 		if (ret < 0)
 			return ret;
 		*val = value & 0x7fff;
@@ -186,76 +266,23 @@ static int smpro_read_curr(struct device *dev, u32 attr, int channel,
 	}
 }
 
-static int smpro_read_power(struct device *dev, u32 attr, int channel,
-				long *val_pwr)
+static int smpro_read_power(struct device *dev, u32 attr, int channel, long *val_pwr)
 {
 	struct smpro_hwmon *hwmon = dev_get_drvdata(dev);
 	unsigned int val = 0, val_mw = 0;
-	int ret = 0;
+	int ret;
 
 	switch (attr) {
 	case hwmon_power_input:
-		switch (channel) {
-		case CORE_VRD_PWR:
-			if (!ret)
-				ret = regmap_read(hwmon->regmap,
-						CORE_VRD_PWR_REG, &val);
-			if (!ret)
-				ret = regmap_read(hwmon->regmap,
-						CORE_VRD_PWR_MW_REG, &val_mw);
-			if (ret)
-				return ret;
-			break;
-		case SOC_PWR:
-			if (!ret)
-				ret = regmap_read(hwmon->regmap,
-						SOC_PWR_REG, &val);
-			if (!ret)
-				ret = regmap_read(hwmon->regmap,
-						SOC_PWR_MW_REG, &val_mw);
-			if (ret)
-				return ret;
-			break;
-		case DIMM_VRD1_PWR:
-			if (!ret)
-				ret = regmap_read(hwmon->regmap,
-						DIMM_VRD1_PWR_REG, &val);
-			if (!ret)
-				ret = regmap_read(hwmon->regmap,
-						DIMM_VRD1_PWR_MW_REG, &val_mw);
-			if (ret)
-				return ret;
-			break;
-		case DIMM_VRD2_PWR:
-			if (!ret)
-				ret = regmap_read(hwmon->regmap,
-						DIMM_VRD2_PWR_REG, &val);
-			if (!ret)
-				ret = regmap_read(hwmon->regmap,
-						DIMM_VRD2_PWR_MW_REG, &val_mw);
-			if (ret)
-				return ret;
-			break;
-		case RCA_VRD_PWR:
-			if (!ret)
-				ret = regmap_read(hwmon->regmap,
-						RCA_VRD_PWR_REG, &val);
-			if (!ret)
-				ret = regmap_read(hwmon->regmap,
-						RCA_VRD_PWR_MW_REG, &val_mw);
-			if (ret)
-				return ret;
-			break;
-		case SOC_TDP_PWR:
-			if (!ret)
-				ret = regmap_read(hwmon->regmap,
-						SOC_TDP_REG, &val);
-			if (ret)
-				return ret;
-			break;
-		default:
-			return -EOPNOTSUPP;
-		}
+			ret = regmap_read(hwmon->regmap, power[channel].reg, &val);
+		if (ret)
+			return ret;
+
+		if (power[channel].reg != SOC_TDP_REG)
+			ret = regmap_read(hwmon->regmap, power[channel].reg_ext, &val_mw);
+
+		if (ret)
+			return ret;
 
 		if (val_mw == 0xffff)
 			val_mw = 0;
@@ -290,12 +317,61 @@ static int smpro_write(struct device *dev, enum hwmon_sensor_types type,
 	return -EOPNOTSUPP;
 }
 
-static umode_t smpro_is_visible(const void *data,
-				enum hwmon_sensor_types type,
-				u32 attr, int channel)
+static int smpro_read_string(struct device *dev, enum hwmon_sensor_types type,
+				u32 attr, int channel, const char **str)
+{
+	switch (type) {
+	case hwmon_temp:
+		switch (attr) {
+		case hwmon_temp_label:
+			*str = temperature[channel].label;
+			return 0;
+		default:
+			return -EOPNOTSUPP;
+		}
+		break;
+
+	case hwmon_in:
+		switch (attr) {
+		case hwmon_in_label:
+			*str = voltage[channel].label;
+			return 0;
+		default:
+			return -EOPNOTSUPP;
+		}
+		break;
+
+	case hwmon_curr:
+		switch (attr) {
+		case hwmon_curr_label:
+			*str = curr_sensor[channel].label;
+			return 0;
+		default:
+			return -EOPNOTSUPP;
+		}
+		break;
+
+	case hwmon_power:
+		switch (attr) {
+		case hwmon_power_label:
+			*str = power[channel].label;
+			return 0;
+		default:
+			return -EOPNOTSUPP;
+		}
+		break;
+	default:
+		return -EOPNOTSUPP;
+	}
+
+	return -EOPNOTSUPP;
+}
+
+static umode_t smpro_is_visible(const void *data, enum hwmon_sensor_types type, u32 attr, int chan)
 {
 	return 0444;
 }
+
 static const struct hwmon_channel_info *smpro_info[] = {
 	HWMON_CHANNEL_INFO(temp,
 			HWMON_T_INPUT | HWMON_T_LABEL,
@@ -339,6 +415,7 @@ static const struct hwmon_ops smpro_hwmon_ops = {
 	.is_visible = smpro_is_visible,
 	.read = smpro_read,
 	.write = smpro_write,
+	.read_string = smpro_read_string,
 };
 
 static const struct hwmon_chip_info smpro_chip_info = {
@@ -364,8 +441,7 @@ static int smpro_hwmon_probe(struct platform_device *pdev)
 	struct device *hwmon_dev;
 	int ret;
 
-	hwmon = devm_kzalloc(&pdev->dev, sizeof(struct smpro_hwmon),
-			GFP_KERNEL);
+	hwmon = devm_kzalloc(&pdev->dev, sizeof(struct smpro_hwmon), GFP_KERNEL);
 	if (!hwmon)
 		return -ENOMEM;
 
@@ -379,8 +455,7 @@ static int smpro_hwmon_probe(struct platform_device *pdev)
 		dev_warn(&pdev->dev, "Hmmh, SMPro not ready yet\n");
 
 	hwmon_dev = devm_hwmon_device_register_with_info(&pdev->dev,
-			"smpro_hwmon", hwmon,
-			&smpro_chip_info, NULL);
+			"smpro_hwmon", hwmon, &smpro_chip_info, NULL);
 	if (IS_ERR(hwmon_dev))
 		dev_err(&pdev->dev, "failed to register as hwmon device");
 
