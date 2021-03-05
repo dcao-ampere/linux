@@ -116,10 +116,6 @@ static const struct smpro_sensor temperature[] = {
 		.label = "temp12 CH7 DIMM"
 	},
 	{
-		.reg = MEM_HOT_THRESHOLD_REG,
-		.label = "temp MEM HOT THRESHOLD"
-	},
-	{
 		.reg = RCA_VRD_TEMP_REG,
 		.label = "temp13 RCA VRD"
 	},
@@ -216,6 +212,12 @@ static int smpro_read_temp(struct device *dev, u32 attr, int channel, long *val)
 	case hwmon_temp_crit:
 		if (temperature[channel].reg == SOC_VRD_TEMP_REG) {
 			ret = regmap_read(hwmon->regmap, SOC_VR_HOT_THRESHOLD_REG, &value);
+			if (ret)
+				return ret;
+			*val = (value & 0x1ff) * 1000;
+		} else {
+			/* Report same MEM HOT threshold across DIMM channels */
+			ret = regmap_read(hwmon->regmap, MEM_HOT_THRESHOLD_REG, &value);
 			if (ret)
 				return ret;
 			*val = (value & 0x1ff) * 1000;
@@ -374,6 +376,7 @@ static umode_t smpro_is_visible(const void *data, enum hwmon_sensor_types type,
 		switch (attr) {
 		case hwmon_temp_input:
 		case hwmon_temp_label:
+		case hwmon_temp_crit:
 			ret = regmap_read(hwmon->regmap, temperature[channel].reg, &value);
 			/* Read fail may due to SMpro not up yet */
 			if (!ret && value == 0xFFFF)
@@ -393,15 +396,14 @@ static const struct hwmon_channel_info *smpro_info[] = {
 			HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
 			HWMON_T_INPUT | HWMON_T_LABEL,
 			HWMON_T_INPUT | HWMON_T_LABEL,
-			HWMON_T_INPUT | HWMON_T_LABEL,
-			HWMON_T_INPUT | HWMON_T_LABEL,
-			HWMON_T_INPUT | HWMON_T_LABEL,
-			HWMON_T_INPUT | HWMON_T_LABEL,
-			HWMON_T_INPUT | HWMON_T_LABEL,
-			HWMON_T_INPUT | HWMON_T_LABEL,
-			HWMON_T_INPUT | HWMON_T_LABEL,
-			HWMON_T_INPUT | HWMON_T_LABEL,
-			HWMON_T_INPUT | HWMON_T_LABEL,
+			HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
+			HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
+			HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
+			HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
+			HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
+			HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
+			HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
+			HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
 			HWMON_T_INPUT | HWMON_T_LABEL),
 	HWMON_CHANNEL_INFO(in,
 			HWMON_I_INPUT | HWMON_I_LABEL,
