@@ -16,9 +16,6 @@
 #define MANUFACTURER_ID_REG		0x02
 #define AMPERE_MANUFACTURER_ID		0xCD3A
 
-/* Capability Registers  */
-#define SOC_TDP_REG			0x0E
-
 /* Logical Power Sensor Registers */
 #define SOC_TEMP_REG			0x10
 #define SOC_VRD_TEMP_REG		0x11
@@ -204,10 +201,6 @@ static const struct smpro_sensor power[] = {
 		.reg_ext = RCA_VRD_PWR_MW_REG,
 		.label = "power5 RCA VRD"
 	},
-	{
-		.reg = SOC_TDP_REG,
-		.label = "power SOCKET TDP"
-	},
 };
 
 static int smpro_read_temp(struct device *dev, u32 attr, int channel, long *val)
@@ -241,6 +234,7 @@ static int smpro_read_in(struct device *dev, u32 attr, int channel, long *val)
 		ret = regmap_read(hwmon->regmap, voltage[channel].reg, &value);
 		if (ret < 0)
 			return ret;
+		/* Scale reported by the hardware is 1mV */
 		*val = value & 0x7fff;
 		return 0;
 	default:
@@ -259,6 +253,7 @@ static int smpro_read_curr(struct device *dev, u32 attr, int channel, long *val)
 		ret = regmap_read(hwmon->regmap, curr_sensor[channel].reg, &value);
 		if (ret < 0)
 			return ret;
+		/* Scale reported by the hardware is 1mA */
 		*val = value & 0x7fff;
 		return 0;
 	default:
@@ -274,21 +269,17 @@ static int smpro_read_power(struct device *dev, u32 attr, int channel, long *val
 
 	switch (attr) {
 	case hwmon_power_input:
-			ret = regmap_read(hwmon->regmap, power[channel].reg, &val);
+		ret = regmap_read(hwmon->regmap, power[channel].reg, &val);
 		if (ret)
 			return ret;
 
-		if (power[channel].reg != SOC_TDP_REG)
-			ret = regmap_read(hwmon->regmap, power[channel].reg_ext, &val_mw);
-
+		ret = regmap_read(hwmon->regmap, power[channel].reg_ext, &val_mw);
 		if (ret)
 			return ret;
-
-		if (val_mw == 0xffff)
-			val_mw = 0;
 
 		*val_pwr = val*1000000 + val_mw*1000;
 		return 0;
+
 	default:
 		return -EOPNOTSUPP;
 	}
@@ -396,12 +387,11 @@ static const struct hwmon_channel_info *smpro_info[] = {
 			HWMON_I_INPUT | HWMON_I_LABEL,
 			HWMON_I_INPUT | HWMON_I_LABEL),
 	HWMON_CHANNEL_INFO(power,
-			HWMON_P_INPUT | HWMON_P_LABEL,
-			HWMON_P_INPUT | HWMON_P_LABEL,
-			HWMON_P_INPUT | HWMON_P_LABEL,
-			HWMON_P_INPUT | HWMON_P_LABEL,
-			HWMON_P_INPUT | HWMON_P_LABEL,
-			HWMON_P_INPUT | HWMON_P_LABEL),
+			   HWMON_P_INPUT | HWMON_P_LABEL,
+			   HWMON_P_INPUT | HWMON_P_LABEL,
+			   HWMON_P_INPUT | HWMON_P_LABEL,
+			   HWMON_P_INPUT | HWMON_P_LABEL,
+			   HWMON_P_INPUT | HWMON_P_LABEL),
 	HWMON_CHANNEL_INFO(curr,
 			HWMON_C_INPUT | HWMON_C_LABEL,
 			HWMON_C_INPUT | HWMON_C_LABEL,
