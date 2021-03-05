@@ -466,8 +466,6 @@ static int smpro_hwmon_probe(struct platform_device *pdev)
 
 	hwmon_dev = devm_hwmon_device_register_with_info(&pdev->dev,
 			"smpro_hwmon", hwmon, &smpro_chip_info, NULL);
-	if (IS_ERR(hwmon_dev))
-		dev_err(&pdev->dev, "failed to register as hwmon device");
 
 	return PTR_ERR_OR_ZERO(hwmon_dev);
 }
