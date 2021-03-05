@@ -358,8 +358,28 @@ static int smpro_read_string(struct device *dev, enum hwmon_sensor_types type,
 	return -EOPNOTSUPP;
 }
 
-static umode_t smpro_is_visible(const void *data, enum hwmon_sensor_types type, u32 attr, int chan)
+static umode_t smpro_is_visible(const void *data, enum hwmon_sensor_types type,
+				u32 attr, int channel)
 {
+	const struct smpro_hwmon *hwmon = data;
+	unsigned int value;
+	int ret;
+
+	switch (type) {
+	case hwmon_temp:
+		switch (attr) {
+		case hwmon_temp_input:
+		case hwmon_temp_label:
+			ret = regmap_read(hwmon->regmap, temperature[channel].reg, &value);
+			/* Read fail may due to SMpro not up yet */
+			if (!ret && value == 0xFFFF)
+				return 0;
+		break;
+		}
+	default:
+		break;
+	}
+
 	return 0444;
 }
 
