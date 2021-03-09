@@ -32,13 +32,8 @@ static int simple_mfd_i2c_probe(struct i2c_client *i2c)
 	struct regmap *regmap;
 
 	config = device_get_match_data(&i2c->dev);
-	if (!config) {
-		if (of_device_is_compatible(i2c->dev.of_node,
-						"ampere,ac01-smpro"))
-			config = &simple_word_regmap_config;
-		else
-			config = &simple_regmap_config;
-	}
+	if (!config)
+		config = &simple_regmap_config;
 
 	regmap = devm_regmap_init_i2c(i2c, config);
 	if (IS_ERR(regmap))
@@ -49,7 +44,7 @@ static int simple_mfd_i2c_probe(struct i2c_client *i2c)
 
 static const struct of_device_id simple_mfd_i2c_of_match[] = {
 	{ .compatible = "kontron,sl28cpld" },
-	{ .compatible = "ampere,ac01-smpro" },
+	{ .compatible = "ampere,ac01-smpro", .data = &simple_word_regmap_config },
 	{}
 };
 MODULE_DEVICE_TABLE(of, simple_mfd_i2c_of_match);
