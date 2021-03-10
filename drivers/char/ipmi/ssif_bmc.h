@@ -70,6 +70,8 @@ struct ssif_bmc_ctx {
 	/* Block Number of a Multi-part Read Transaction */
 	u8			block_num;
 	size_t			msg_idx;
+	enum i2c_slave_event	prev_event;
+	bool			pec_support;
 	spinlock_t		lock;
 	wait_queue_head_t	wait_queue;
 	struct mutex		file_mutex;

@@ -30,6 +30,34 @@
 
 #include "ssif_bmc.h"
 
+#define POLY    (0x1070U << 3)
+static u8 crc8(u16 data)
+{
+	int i;
+
+	for (i = 0; i < 8; i++) {
+		if (data & 0x8000)
+			data = data ^ POLY;
+		data = data << 1;
+	}
+	return (u8)(data >> 8);
+}
+
+/* Incremental CRC8 over count bytes in the array pointed to by p */
+static u8 i2c_calculate_pec(u8 crc, u8 *p, size_t count)
+{
+	int i;
+
+	for (i = 0; i < count; i++)
+		crc = crc8((crc ^ p[i]) << 8);
+	return crc;
+}
+
+static u8 i2c_8bit_addr(u8 addr_7bit)
+{
+	return (addr_7bit << 1);
+}
+
 /*
  * Call in WRITE context
  */
@@ -289,8 +317,8 @@ static void set_response_buffer(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
 		}
 
 		memcpy(&ssif_bmc->response_buffer[idx],
-				ssif_bmc->response.payload + 1 + ssif_bmc->num_bytes_processed,
-				response_data_len);
+			ssif_bmc->response.payload + 1 + ssif_bmc->num_bytes_processed,
+			response_data_len);
 		break;
 
 	default:
@@ -341,20 +369,36 @@ static void event_request_read(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
 static void event_process_read(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
 {
 	u8 *buf;
+	u8 pec_len, addr, len;
+	u8 pec_base = 0;
 
+	pec_len = ssif_bmc->pec_support ? 1 : 0;
+	/* PEC - Start Read Address */
+	addr = i2c_8bit_addr(ssif_bmc->client->addr);
+	pec_base = i2c_calculate_pec(pec_base, &addr, 1);
+	/* PEC - SSIF Command */
+	pec_base = i2c_calculate_pec(pec_base, &ssif_bmc->smbus_cmd, 1);
+	/* PEC - Restart Write Address */
+	addr = addr | 0x01;
+	pec_base = i2c_calculate_pec(pec_base, &addr, 1);
 	if (!ssif_bmc->is_multi_part_read) {
 		/* Single-part Read processing */
 		buf = (u8 *) &ssif_bmc->response;
 
 		if (ssif_bmc->response.len &&
-		    ssif_bmc->msg_idx < ssif_msg_len(&ssif_bmc->response)) {
+		    ssif_bmc->msg_idx < ssif_bmc->response.len) {
 			ssif_bmc->msg_idx++;
 			*val = buf[ssif_bmc->msg_idx];
-		} else {
+		} else if (ssif_bmc->response.len &&
+			   (ssif_bmc->msg_idx == ssif_bmc->response.len)){
+			ssif_bmc->msg_idx++;
+			*val = i2c_calculate_pec(pec_base, buf,
+					ssif_msg_len(&ssif_bmc->response));
+		} else
 			*val = 0;
-		}
 		/* Invalidate response buffer to denote it is sent */
-		if (ssif_bmc->msg_idx + 1 >= ssif_msg_len(&ssif_bmc->response))
+		if (ssif_bmc->msg_idx + 1 >=
+		   (ssif_msg_len(&ssif_bmc->response) + pec_len))
 			complete_response(ssif_bmc);
 	} else {
 		/* Multi-part Read processing */
@@ -371,10 +415,16 @@ static void event_process_read(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
 					ssif_bmc->smbus_cmd);
 			break;
 		}
-
+		len = (ssif_bmc->block_num == 0xFF) ?
+		       ssif_bmc->remain_data_len + 1 : MAX_PAYLOAD_PER_TRANSACTION;
+		if (ssif_bmc->msg_idx == (len + 1)) {
+			pec_base = i2c_calculate_pec(pec_base, &len, 1);
+			*val = i2c_calculate_pec(pec_base,
+					ssif_bmc->response_buffer, len);
+		}
 		/* Invalidate response buffer to denote last response is sent */
-		if ((ssif_bmc->block_num == 0xFF)
-			&& (ssif_bmc->msg_idx > ssif_bmc->remain_data_len)) {
+		if ((ssif_bmc->block_num == 0xFF) &&
+		    (ssif_bmc->msg_idx > (ssif_bmc->remain_data_len) + pec_len)) {
 			complete_response(ssif_bmc);
 		}
 	}
@@ -396,8 +446,6 @@ static void event_received_write(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
 		/* Single-part write */
 		buf[ssif_bmc->msg_idx - 1] = *val;
 		ssif_bmc->msg_idx++;
-		if ((ssif_bmc->msg_idx - 1) >= ssif_msg_len(&ssif_bmc->request))
-			handle_request(ssif_bmc);
 		break;
 	case SSIF_IPMI_MULTI_PART_REQUEST_START:
 	case SSIF_IPMI_MULTI_PART_REQUEST_MIDDLE:
@@ -412,27 +460,11 @@ static void event_received_write(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
 			ssif_bmc->request.len += *val;
 			ssif_bmc->recv_data_len = *val;
 			ssif_bmc->msg_idx++;
-			/* As SMBus specification does not allow the length
-			 * (byte count) in the Write-Block protocol to be zero.
-			 * Therefore, it is illegal to have the last Middle
-			 * transaction in the sequence carry 32-bytes and have
-			 * a length of ‘0’ in the End transaction.
-			 * But some users may try to use this way and we should
-			 * prevent ssif_bmc driver broken in this case.
-			 */
-			if ((*val == 0) &&
-			    (smbus_cmd == SSIF_IPMI_MULTI_PART_REQUEST_END))
-				handle_request(ssif_bmc);
 			break;
 		}
 		index = ssif_bmc->request.len - ssif_bmc->recv_data_len;
 		buf[ssif_bmc->msg_idx - 1 + index] = *val;
 		ssif_bmc->msg_idx++;
-		if (smbus_cmd == SSIF_IPMI_MULTI_PART_REQUEST_END) {
-			if ((ssif_bmc->msg_idx - 1 + index) >=
-			    ssif_msg_len(&ssif_bmc->request))
-				handle_request(ssif_bmc);
-		}
 		break;
 	default:
 		/* Do not expect to go to this case */
@@ -442,6 +474,107 @@ static void event_received_write(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
 	}
 }
 
+static bool validate_pec(struct ssif_bmc_ctx *ssif_bmc)
+{
+	u8 rpec = 0,cpec = 0;
+	bool ret = true;
+	u8 addr, index;
+	u8 *buf;
+
+	buf = (u8 *) &ssif_bmc->request;
+	switch (ssif_bmc->smbus_cmd) {
+	case SSIF_IPMI_REQUEST:
+		if ((ssif_bmc->msg_idx - 1) ==
+		    ssif_msg_len(&ssif_bmc->request)) {
+			/* PEC is not included */
+			ssif_bmc->pec_support = false;
+		} else if ((ssif_bmc->msg_idx - 1) ==
+			   (ssif_msg_len(&ssif_bmc->request) + 1)) {
+			/* PEC is included */
+			ssif_bmc->pec_support = true;
+			rpec = buf[ssif_bmc->msg_idx - 2];
+			addr = i2c_8bit_addr(ssif_bmc->client->addr);
+			cpec = i2c_calculate_pec(cpec, &addr, 1);
+			cpec = i2c_calculate_pec(cpec, &ssif_bmc->smbus_cmd, 1);
+			cpec = i2c_calculate_pec(cpec, buf,
+					ssif_msg_len(&ssif_bmc->request));
+			if (rpec != cpec) {
+				pr_err("Bad PEC 0x%02x vs. 0x%02x\n", rpec, cpec);
+				ret = false;
+			}
+		} else
+			goto error;
+		break;
+	case SSIF_IPMI_MULTI_PART_REQUEST_START:
+	case SSIF_IPMI_MULTI_PART_REQUEST_MIDDLE:
+	case SSIF_IPMI_MULTI_PART_REQUEST_END:
+		index = ssif_bmc->request.len - ssif_bmc->recv_data_len;
+		if ((ssif_bmc->msg_idx - 1 + index) ==
+		    ssif_msg_len(&ssif_bmc->request)) {
+			/* PEC is not included */
+			ssif_bmc->pec_support = false;
+		} else if ((ssif_bmc->msg_idx - 1 + index) ==
+			   (ssif_msg_len(&ssif_bmc->request) + 1)) {
+			/* PEC is included */
+			ssif_bmc->pec_support = true;
+			rpec = buf[ssif_bmc->msg_idx - 2 + index];
+			addr = i2c_8bit_addr(ssif_bmc->client->addr);
+			cpec = i2c_calculate_pec(cpec, &addr, 1);
+			cpec = i2c_calculate_pec(cpec, &ssif_bmc->smbus_cmd, 1);
+			cpec = i2c_calculate_pec(cpec, &ssif_bmc->recv_data_len, 1);
+			ssif_bmc->msg_idx++;
+			/* As SMBus specification does not allow the length
+			 * (byte count) in the Write-Block protocol to be zero.
+			 * Therefore, it is illegal to have the last Middle
+			 * transaction in the sequence carry 32-bytes and have
+			 * a length of ‘0’ in the End transaction.
+			 * But some users may try to use this way and we should
+			 * prevent ssif_bmc driver broken in this case.
+			 */
+			if (ssif_bmc->recv_data_len != 0) {
+				cpec = i2c_calculate_pec(cpec, buf + 1 + index,
+						ssif_bmc->recv_data_len);
+			}
+			if (rpec != cpec) {
+				pr_err("Bad PEC 0x%02x vs. 0x%02x\n", rpec, cpec);
+				ret = false;
+			}
+		} else
+			goto error;
+		break;
+	default:
+		break;
+	}
+
+	return ret;
+error:
+	/* Do not expect to go to this case */
+	pr_err("Error: Unexpected length received %d\n",
+	       ssif_msg_len(&ssif_bmc->request));
+
+	return false;
+}
+
+static void complete_received(struct ssif_bmc_ctx *ssif_bmc)
+{
+	u8 cmd = ssif_bmc->smbus_cmd;
+
+	/* A BMC that receives an invalid PEC shall drop the data for the write
+	 * transaction and any further transactions (read or write) until
+	 * the next valid read or write Start transaction is received
+	 */
+	if (!validate_pec(ssif_bmc)) {
+		pr_err("Received invalid PEC\n");
+		return;
+	}
+
+	if ((cmd == SSIF_IPMI_REQUEST) ||
+	    (cmd == SSIF_IPMI_MULTI_PART_REQUEST_END))
+		handle_request(ssif_bmc);
+
+	return;
+}
+
 /*
  * Callback function to handle I2C slave events
  */
@@ -449,7 +582,6 @@ static int ssif_bmc_cb(struct i2c_client *client,
 				enum i2c_slave_event event, u8 *val)
 {
 	struct ssif_bmc_ctx *ssif_bmc = i2c_get_clientdata(client);
-	u8 *buf;
 
 	spin_lock(&ssif_bmc->lock);
 
@@ -462,19 +594,23 @@ static int ssif_bmc_cb(struct i2c_client *client,
 	 */
 	switch (event) {
 	case I2C_SLAVE_READ_REQUESTED:
+		ssif_bmc->prev_event = I2C_SLAVE_READ_REQUESTED;
 		ssif_bmc->msg_idx = 0;
 		event_request_read(ssif_bmc, val);
 		break;
 
 	case I2C_SLAVE_WRITE_REQUESTED:
+		ssif_bmc->prev_event = I2C_SLAVE_WRITE_REQUESTED;
 		ssif_bmc->msg_idx = 0;
 		break;
 
 	case I2C_SLAVE_READ_PROCESSED:
+		ssif_bmc->prev_event = I2C_SLAVE_READ_PROCESSED;
 		event_process_read(ssif_bmc, val);
 		break;
 
 	case I2C_SLAVE_WRITE_RECEIVED:
+		ssif_bmc->prev_event = I2C_SLAVE_WRITE_RECEIVED;
 		/*
 		 * First byte is SMBUS command, not a part of SSIF message.
 		 * SSIF request buffer starts with msg_idx 1 for the first
@@ -490,6 +626,13 @@ static int ssif_bmc_cb(struct i2c_client *client,
 		break;
 
 	case I2C_SLAVE_STOP:
+		/*
+		 * PEC byte is appended at the end of each transaction.
+		 * Detect PEC is support or not after receiving write request
+		 * completely.
+		 */
+		if (ssif_bmc->prev_event == I2C_SLAVE_WRITE_RECEIVED)
+			complete_received(ssif_bmc);
 		/* Reset message index */
 		ssif_bmc->msg_idx = 0;
 		break;
