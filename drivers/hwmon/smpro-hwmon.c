@@ -467,7 +467,7 @@ static int smpro_hwmon_probe(struct platform_device *pdev)
 	/* Check for valid ID */
 	ret = check_valid_id(hwmon->regmap);
 	if (ret)
-		dev_warn(&pdev->dev, "Hmmh, SMPro not ready yet\n");
+		return -EPROBE_DEFER;
 
 	hwmon_dev = devm_hwmon_device_register_with_info(&pdev->dev,
 			"smpro_hwmon", hwmon, &smpro_chip_info, NULL);
