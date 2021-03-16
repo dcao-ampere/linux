@@ -204,7 +204,7 @@ static int smpro_read_temp(struct device *dev, u32 attr, int channel, long *val)
 	switch (attr) {
 	case hwmon_temp_input:
 		ret = regmap_read(hwmon->regmap,
-				temperature[channel].reg, &value);
+				  temperature[channel].reg, &value);
 		if (ret)
 			return ret;
 		*val = (value & 0x1ff) * 1000;
@@ -283,7 +283,7 @@ static int smpro_read_power(struct device *dev, u32 attr, int channel, long *val
 		if (ret)
 			return ret;
 
-		*val_pwr = val*1000000 + val_mw*1000;
+		*val_pwr = val * 1000000 + val_mw * 1000;
 		return 0;
 
 	default:
@@ -292,7 +292,7 @@ static int smpro_read_power(struct device *dev, u32 attr, int channel, long *val
 }
 
 static int smpro_read(struct device *dev, enum hwmon_sensor_types type,
-				u32 attr, int channel, long *val)
+		      u32 attr, int channel, long *val)
 {
 	switch (type) {
 	case hwmon_temp:
@@ -309,13 +309,13 @@ static int smpro_read(struct device *dev, enum hwmon_sensor_types type,
 }
 
 static int smpro_write(struct device *dev, enum hwmon_sensor_types type,
-				u32 attr, int channel, long val)
+		       u32 attr, int channel, long val)
 {
 	return -EOPNOTSUPP;
 }
 
 static int smpro_read_string(struct device *dev, enum hwmon_sensor_types type,
-				u32 attr, int channel, const char **str)
+			     u32 attr, int channel, const char **str)
 {
 	switch (type) {
 	case hwmon_temp:
@@ -392,25 +392,25 @@ static umode_t smpro_is_visible(const void *data, enum hwmon_sensor_types type,
 
 static const struct hwmon_channel_info *smpro_info[] = {
 	HWMON_CHANNEL_INFO(temp,
-			HWMON_T_INPUT | HWMON_T_LABEL,
-			HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
-			HWMON_T_INPUT | HWMON_T_LABEL,
-			HWMON_T_INPUT | HWMON_T_LABEL,
-			HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
-			HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
-			HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
-			HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
-			HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
-			HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
-			HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
-			HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
-			HWMON_T_INPUT | HWMON_T_LABEL),
+			   HWMON_T_INPUT | HWMON_T_LABEL,
+			   HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
+			   HWMON_T_INPUT | HWMON_T_LABEL,
+			   HWMON_T_INPUT | HWMON_T_LABEL,
+			   HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
+			   HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
+			   HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
+			   HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
+			   HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
+			   HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
+			   HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
+			   HWMON_T_INPUT | HWMON_T_LABEL | HWMON_T_CRIT,
+			   HWMON_T_INPUT | HWMON_T_LABEL),
 	HWMON_CHANNEL_INFO(in,
-			HWMON_I_INPUT | HWMON_I_LABEL,
-			HWMON_I_INPUT | HWMON_I_LABEL,
-			HWMON_I_INPUT | HWMON_I_LABEL,
-			HWMON_I_INPUT | HWMON_I_LABEL,
-			HWMON_I_INPUT | HWMON_I_LABEL),
+			   HWMON_I_INPUT | HWMON_I_LABEL,
+			   HWMON_I_INPUT | HWMON_I_LABEL,
+			   HWMON_I_INPUT | HWMON_I_LABEL,
+			   HWMON_I_INPUT | HWMON_I_LABEL,
+			   HWMON_I_INPUT | HWMON_I_LABEL),
 	HWMON_CHANNEL_INFO(power,
 			   HWMON_P_INPUT | HWMON_P_LABEL,
 			   HWMON_P_INPUT | HWMON_P_LABEL,
@@ -418,11 +418,11 @@ static const struct hwmon_channel_info *smpro_info[] = {
 			   HWMON_P_INPUT | HWMON_P_LABEL,
 			   HWMON_P_INPUT | HWMON_P_LABEL),
 	HWMON_CHANNEL_INFO(curr,
-			HWMON_C_INPUT | HWMON_C_LABEL,
-			HWMON_C_INPUT | HWMON_C_LABEL,
-			HWMON_C_INPUT | HWMON_C_LABEL,
-			HWMON_C_INPUT | HWMON_C_LABEL,
-			HWMON_C_INPUT | HWMON_C_LABEL),
+			   HWMON_C_INPUT | HWMON_C_LABEL,
+			   HWMON_C_INPUT | HWMON_C_LABEL,
+			   HWMON_C_INPUT | HWMON_C_LABEL,
+			   HWMON_C_INPUT | HWMON_C_LABEL,
+			   HWMON_C_INPUT | HWMON_C_LABEL),
 	NULL
 };
 
