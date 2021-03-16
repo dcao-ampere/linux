@@ -199,7 +199,7 @@ static int smpro_read_temp(struct device *dev, u32 attr, int channel, long *val)
 {
 	struct smpro_hwmon *hwmon = dev_get_drvdata(dev);
 	unsigned int value;
-	int ret = -1;
+	int ret;
 
 	switch (attr) {
 	case hwmon_temp_input:
