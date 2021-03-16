@@ -438,23 +438,20 @@ static const struct hwmon_chip_info smpro_chip_info = {
 	.info = smpro_info,
 };
 
-static int check_valid_id (struct regmap *regmap)
+static bool is_valid_id(struct regmap *regmap)
 {
 	unsigned int val;
 	int ret;
 
 	ret = regmap_read(regmap, MANUFACTURER_ID_REG, &val);
-	if (ret)
-		return ret;
 
-	return  (val == AMPERE_MANUFACTURER_ID) ? 0 : 1;
+	return  (ret || (val != AMPERE_MANUFACTURER_ID)) ? false : true;
 }
 
 static int smpro_hwmon_probe(struct platform_device *pdev)
 {
 	struct smpro_hwmon *hwmon;
 	struct device *hwmon_dev;
-	int ret;
 
 	hwmon = devm_kzalloc(&pdev->dev, sizeof(struct smpro_hwmon), GFP_KERNEL);
 	if (!hwmon)
@@ -465,12 +462,11 @@ static int smpro_hwmon_probe(struct platform_device *pdev)
 		return -ENODEV;
 
 	/* Check for valid ID */
-	ret = check_valid_id(hwmon->regmap);
-	if (ret)
+	if (!is_valid_id(hwmon->regmap))
 		return -EPROBE_DEFER;
 
-	hwmon_dev = devm_hwmon_device_register_with_info(&pdev->dev,
-			"smpro_hwmon", hwmon, &smpro_chip_info, NULL);
+	hwmon_dev = devm_hwmon_device_register_with_info(&pdev->dev, "smpro_hwmon",
+							 hwmon, &smpro_chip_info, NULL);
 
 	return PTR_ERR_OR_ZERO(hwmon_dev);
 }
