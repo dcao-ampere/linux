@@ -199,6 +199,8 @@ static const struct file_operations ssif_bmc_fops = {
 /* Called with ssif_bmc->lock held. */
 static int handle_request(struct ssif_bmc_ctx *ssif_bmc)
 {
+	printk("ssif_bmc_cb: I2C_SLAVE_WRITE_RECEIVED: len=%d\n",
+		ssif_bmc->request.len);
 	if (ssif_bmc->set_ssif_bmc_status)
 		ssif_bmc->set_ssif_bmc_status(ssif_bmc, SSIF_BMC_BUSY);
 
@@ -216,6 +218,8 @@ static int handle_request(struct ssif_bmc_ctx *ssif_bmc)
 /* Called with ssif_bmc->lock held. */
 static int complete_response(struct ssif_bmc_ctx *ssif_bmc)
 {
+	printk("ssif_bmc_cb: I2C_SLAVE_READ_PROCESSED: cmd=%d, len=%d\n",
+		ssif_bmc->smbus_cmd, ssif_bmc->response.len);
 	/* Invalidate response in buffer to denote it having been sent. */
 	ssif_bmc->response.len = 0;
 	ssif_bmc->response_in_progress = false;
@@ -317,6 +321,9 @@ static void set_singlepart_response_buffer(struct ssif_bmc_ctx *ssif_bmc, u8 *va
 	 * Otherwise, return the length of IPMI response
 	 */
 	*val = (buf[ssif_bmc->msg_idx]) ? buf[ssif_bmc->msg_idx] : 0x1;
+	if (*val == 0) {
+		pr_err("Warn#########: SSIF response is not ready");
+	}
 }
 
 /* Process the IPMI response that will be read by master */
@@ -524,6 +531,26 @@ static void complete_write_received(struct ssif_bmc_ctx *ssif_bmc)
 		handle_request(ssif_bmc);
 }
 
+static void initialize_transfer(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
+{
+	/* SMBUS command can vary (single or multi-part) */
+	ssif_bmc->smbus_cmd = *val;
+	ssif_bmc->msg_idx++;
+
+	if((ssif_bmc->smbus_cmd == SSIF_IPMI_REQUEST) ||
+	   (ssif_bmc->smbus_cmd == SSIF_IPMI_MULTI_PART_REQUEST_START)) {
+		/*
+		* The response can be delayed in BMC causing host SSIF driver
+		* to timeout and send a new request once BMC slave is ready.
+		* In that case check for pending response and clear it
+		*/
+		if(ssif_bmc->response_in_progress) {
+			pr_err("Warn#########: SSIF new request with pending response");
+//			complete_response(ssif_bmc);
+		}
+	}
+}
+
 /*
  * Callback function to handle I2C slave events
  */
@@ -542,6 +569,7 @@ static int ssif_bmc_cb(struct i2c_client *client, enum i2c_slave_event event, u8
 	 */
 	switch (event) {
 	case I2C_SLAVE_READ_REQUESTED:
+		printk("ssif_bmc_cb: I2C_SLAVE_READ_REQUESTED\n");
 		ssif_bmc->msg_idx = 0;
 		if (ssif_bmc->is_singlepart_read)
 			set_singlepart_response_buffer(ssif_bmc, val);
@@ -550,23 +578,24 @@ static int ssif_bmc_cb(struct i2c_client *client, enum i2c_slave_event event, u8
 		break;
 
 	case I2C_SLAVE_WRITE_REQUESTED:
+		printk("ssif_bmc_cb: I2C_SLAVE_WRITE_REQUESTED\n");
 		ssif_bmc->msg_idx = 0;
 		break;
 
 	case I2C_SLAVE_READ_PROCESSED:
 		handle_read_processed(ssif_bmc, val);
+		printk("Respond data: 0x%x\n", *val);
 		break;
 
 	case I2C_SLAVE_WRITE_RECEIVED:
+		printk("byte%d=0x%x\n", ssif_bmc->msg_idx, *val);
 		/*
 		 * First byte is SMBUS command, not a part of SSIF message.
 		 * SSIF request buffer starts with msg_idx 1 for the first
 		 *  buffer byte.
 		 */
 		if (ssif_bmc->msg_idx == 0) {
-			/* SMBUS command can vary (single or multi-part) */
-			ssif_bmc->smbus_cmd = *val;
-			ssif_bmc->msg_idx++;
+			initialize_transfer(ssif_bmc, val);
 		} else {
 			handle_write_received(ssif_bmc, val);
 		}
@@ -574,6 +603,7 @@ static int ssif_bmc_cb(struct i2c_client *client, enum i2c_slave_event event, u8
 		break;
 
 	case I2C_SLAVE_STOP:
+		printk("ssif_bmc_cb: I2C_SLAVE_STOP\n");
 		/*
 		 * PEC byte is appended at the end of each transaction.
 		 * Detect PEC is support or not after receiving write request
